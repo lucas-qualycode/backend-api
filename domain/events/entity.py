@@ -1,0 +1,42 @@
+from typing import ClassVar
+
+from pydantic import BaseModel
+
+
+class Event(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    location: str | None = None
+    location_address: str | None = None
+    location_link: str | None = None
+    active: bool
+    is_paid: bool
+    is_online: bool
+    type_ids: list[str]
+    imageURL: str | None = None
+    deleted: bool
+    created_at: str
+    updated_at: str
+    created_by: str
+    last_updated_by: str
+
+
+class EventQueryParams(BaseModel):
+    name: str | None = None
+    active: bool | None = None
+    is_paid: bool | None = None
+    is_online: bool | None = None
+    deleted: bool | None = None
+    type_id: str | None = None
+    limit: int | None = None
+    offset: int | None = None
+
+    FILTER_SPEC: ClassVar[list[tuple[str, str, str]]] = [
+        ("name", "name", "=="),
+        ("active", "active", "=="),
+        ("is_paid", "is_paid", "=="),
+        ("is_online", "is_online", "=="),
+        ("deleted", "deleted", "=="),
+        ("type_id", "type_ids", "array_contains"),
+    ]

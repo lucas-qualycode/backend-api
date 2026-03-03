@@ -1,0 +1,73 @@
+from fastapi import APIRouter, Depends, Header, HTTPException
+
+from backend_api.api.deps import get_event_type_repository
+from backend_api.application.event_types import (
+    create_event_type,
+    delete_event_type,
+    get_event_type,
+    list_event_types,
+    update_event_type,
+)
+from backend_api.application.event_types.schemas import CreateEventTypeInput, UpdateEventTypeInput
+from backend_api.domain.event_types.entity import EventTypeQueryParams
+from backend_api.domain.event_types.exceptions import EventTypeNotFoundError
+from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+
+router = APIRouter(prefix="/event-types", tags=["event-types"])
+
+
+@router.get("")
+def list_event_types_endpoint(
+    name: str | None = None,
+    active: bool | None = None,
+    deleted: bool | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    repo=Depends(get_event_type_repository),
+):
+    params = EventTypeQueryParams(name=name, active=active, deleted=deleted, limit=limit, offset=offset)
+    items = list_event_types(repo, params)
+    return [e.model_dump(mode="json") for e in items]
+
+
+@router.get("/{id}")
+def get_event_type_endpoint(id: str, repo=Depends(get_event_type_repository)):
+    try:
+        return get_event_type(repo, id).model_dump(mode="json")
+    except EventTypeNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("", status_code=201)
+def create_event_type_endpoint(
+    data: CreateEventTypeInput,
+    x_user_id: str = Header("", alias="X-User-Id"),
+    repo=Depends(get_event_type_repository),
+):
+    return create_event_type(repo, data, x_user_id, get_timestamp()).model_dump(mode="json")
+
+
+@router.put("/{id}")
+@router.patch("/{id}")
+def update_event_type_endpoint(
+    id: str,
+    data: UpdateEventTypeInput,
+    x_user_id: str = Header("", alias="X-User-Id"),
+    repo=Depends(get_event_type_repository),
+):
+    try:
+        return update_event_type(repo, id, data, x_user_id, get_timestamp()).model_dump(mode="json")
+    except EventTypeNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.delete("/{id}")
+def delete_event_type_endpoint(
+    id: str,
+    x_user_id: str = Header("", alias="X-User-Id"),
+    repo=Depends(get_event_type_repository),
+):
+    try:
+        return delete_event_type(repo, id, x_user_id).model_dump(mode="json")
+    except EventTypeNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))

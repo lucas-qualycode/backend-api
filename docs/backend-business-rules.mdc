@@ -1,0 +1,183 @@
+---
+description: Backend business rules — validations, status transitions, and domain rules
+globs: backend/**/*
+alwaysApply: false
+---
+
+# Backend business rules
+
+All rules below are enforced in code. Do not change behavior without updating this file and the implementation together.
+
+---
+
+## Events
+
+### Event
+- **Create**: User ID required (from auth). Name required, max 256 chars. `imageURL` and `location_link` must be valid URLs if provided. At least one event type required; type IDs must exist, be active, and have no duplicates. Defaults: `active=true`, `is_paid=false`, `is_online=false`. Protected on create: `id`, `created_at`, `created_by`, `deleted` are set by system.
+- **Update**: User ID required. Cannot update a deleted event. Protected fields (stripped if sent): `id`, `created_at`, `created_by`, `deleted`. Name max 256 chars if provided. `active`, `is_paid`, `is_online` must be boolean if provided. If `type_ids` provided, same validation as create.
+- **Delete**: Soft delete only. Must call validate-deletion first; deletion allowed only if event exists and is not already deleted. On delete: event `deleted=true`; all tickets for event set `active=false`, `deleted=true` and inventory `available_quantity=0`, metadata `event_deleted=true`; active user tickets set `status=CANCELLED`, `cancellation_reason=EVENT_CANCELLED`; stands/schedules set `active=false`, `deleted=true`; PENDING invitations set `status=CANCELLED`, `cancellation_reason=EVENT_CANCELLED`.
+
+### Event type
+- **Create**: User ID required. Name required, max 256 chars. `active` must be boolean. Name must be unique (case-insensitive) among non-deleted event types.
+- **Update**: User ID required. If name is changed, new name must be unique among event types.
+- **Delete**: Soft delete (no pre-check in code for “in use by events” — TODO in code).
+
+---
+
+## Products / Tickets (events function)
+
+Tickets are products with `type=TICKET`, `parent_type=EVENT`. Rules below apply to products (including tickets) unless stated otherwise.
+
+### Product (create)
+- User ID required. Name required, max 256 chars. Description required. `active` and `is_free` must be boolean if provided. Default `active=true`.
+- If `is_free` then `value` is forced to 0; else `value` must be number/bigint and > 0.
+- `quantity` if provided: positive integer. `max_per_user` if provided: positive integer.
+- Product is created with inventory; inventory ID pattern `TICKET_<productId>` for tickets.
+
+### Product (update)
+- User ID required. Product must exist and belong to parent; cannot update a deleted product. Protected fields (stripped): `id`, `parentId`, `created_at`, `deleted`. Name max 256 chars if provided. `active` must be boolean if provided. Inventory is updated when product quantity or value changes (e.g. `available_quantity = quantity - reserved_quantity`).
+
+### Product (delete)
+- Product must exist and belong to parent. Soft delete: product and inventory deactivated in a transaction.
+
+### Product (get by id / availability / inventory)
+- Product must exist and `product.parent_id` must match request parent (event id for tickets).
+
+### Product quantity update
+- User ID required. Quantity must be a positive integer. Product must exist and belong to parent. Inventory total and available quantities updated accordingly.
+
+---
+
+## Stands
+
+- **Create**: User ID required. Event must exist. Name required, max 256 chars. `base_price` must be >= 0. `location.coordinates.x` and `location.coordinates.y` must be numbers. Initial `status=available`, `deleted=false`.
+- **Update**: User ID and event required. Stand must exist. Name max 256 if provided. Coordinates validated if provided. `base_price` if provided must be >= 0. `status` if provided must be `available` or `maintenance`.
+- **Delete**: Soft delete: `deleted=true`. Event and stand must exist.
+
+---
+
+## Schedules
+
+- **Create**: Event must exist. If `parent_id` provided: parent schedule must exist and belong to same event; child schedule must be within parent date/time and include parent exclusions (ScheduleManager.validateSchedule). Dates: `YYYY-MM-DD`. Times: `HH:mm` (e.g. 09:00). End date must be >= start date; on same day, start time must be before end time. No overlap with other non-cancelled, non-completed schedules for the event (ScheduleManager.checkScheduleOverlaps).
+- **Update**: Same validations as create for the resulting schedule; parent must belong to event; no overlaps (excluding current schedule when updating).
+- **Delete**: Schedule must exist and belong to event. Cannot delete if it has child schedules (`parent_id` pointing to it).
+
+---
+
+## Invitations
+
+### Constants (INVITATION_RULES)
+- `EXPIRATION_DAYS`: 7. `MAX_INVITATIONS_PER_HOUR` and `MAX_INVITATIONS_PER_DAY`: 1000 each. Email: regex `^[^\s@]+@[^\s@]+\.[^\s@]+$`. Phone (SMS/WhatsApp): `^\+?[\d\s-]{10,}$`.
+
+### Create
+- User ID required. Event must exist. Each `ticket_id` must be a product that exists and has `parent_id = eventId`. `type` must be one of: LINK. `destination_type` must be one of: EMAIL, SMS, WHATSAPP, USER_ID. Destination validated by type: EMAIL → email regex; SMS/WHATSAPP → phone regex. Rate limits: per inviter, max INVITATION_RULES.MAX_INVITATIONS_PER_HOUR in last hour and MAX_INVITATIONS_PER_DAY in last 24h. If `expires_at` provided it must be valid date and in the future; else default 7 days from now. Initial `status=PENDING`.
+
+### Update
+- Invitation must exist and `invitation.event_id` must match request `eventId`. Ticket IDs if provided must exist and belong to event. Type/destination_type/destination/expires_at validated same as create when provided. Expires_at must be in the future if provided. Token is regenerated on update.
+
+### Status transitions (updateInvitationStatusWithValidation)
+- PENDING → ACCEPTED, DECLINED, EXPIRED, CANCELLED.
+- ACCEPTED → CANCELLED.
+- DECLINED, EXPIRED, CANCELLED → no transitions.
+
+### Validate invitation (get by id / get products — public)
+- Invitation must exist. If `expires_at` is in the past and status is PENDING: status is set to EXPIRED and "Invitation has expired" is thrown. Otherwise invitation is valid for the request.
+
+### Decline (public)
+- Invitation must exist. Only PENDING invitations can be declined. Status set to DECLINED; optional message stored in metadata.
+
+### Trigger (on payment APPROVED)
+- If order has `metadata.invitation_id`, invitation is updated to ACCEPTED only if current status is not already ACCEPTED and not DECLINED (DECLINED must not be overwritten to ACCEPTED). Metadata can include `order_id`, `payment_id`, `message`.
+
+---
+
+## Attendees
+
+- **Create**: User ID required. Event must exist. `user_product_id` must be a user product that exists and has `user_id = req.user.id`. If `invitation_id` provided, invitation must exist and `invitation.event_id = eventId`. Initial `status=REGISTERED`.
+- **Status update**: Allowed transitions: REGISTERED → CHECKED_IN, CANCELLED, NO_SHOW. CHECKED_IN, CANCELLED, NO_SHOW → no transitions. On transition to CHECKED_IN, `check_in_time` is set.
+
+---
+
+## User tickets / User products (events)
+
+User tickets are user products in event context. Create/get/list/update status/update additional_data delegate to shared UserProductController.
+
+### Update additional data by invitation (public route)
+- If request has no auth user, `req.user.id` is set from invitation’s `inviter_id` (invitation must exist). Then same rules as updateUserProductAdditionalData: user product must exist, additional_data required in body, user must own the user product (or be the inviter when called via invitation flow).
+
+### User product status transitions (shared)
+- ACTIVE → USED, EXPIRED, CANCELLED.
+- USED → REFUNDED.
+- CANCELLED → REFUNDED.
+- EXPIRED, REFUNDED → no transitions.
+
+### User product additional data
+- User ID required. User product must exist. Request must contain `additional_data` (object). Merged with existing additional_data.
+
+---
+
+## Orders (payments function)
+
+- **Create order**: User must be authenticated, or if `metadata.invitation_id` is set then user can be inferred from invitation’s `inviter_id`. Before creating order, inventory is reserved: each item must have an inventory document (PRODUCT_<product_id>), and `available_quantity >= item.quantity`; on success, `available_quantity` decreased and `reserved_quantity` increased by item.quantity. Order created with status CREATED. Order products created with status RESERVED, payment_status PENDING. If `auto_process_payment` is true: if `payment_provider === 'free_order_payment_not_required'` then a payment with status APPROVED is created, order set to PROCESSED, order products to PROCESSED; else `payment_data` is required, payment record created (PENDING), provider creates payment (e.g. Mercado Pago), payment record updated with transaction id and status, order set to PROCESSING, order products set to PROCESSING. If payment creation fails after order creation, order still returned with payment_error message.
+- **List orders**: If authenticated and no `user_id` in query, filter by `req.user.id`.
+
+### Order status flow (from types)
+- CREATED → PROCESSING, EXPIRED, CANCELLED.
+- PROCESSING → PROCESSED, EXPIRED, CANCELLED, FAILED.
+- PROCESSED → REFUNDED, CANCELLED.
+- FAILED → PROCESSING, EXPIRED, CANCELLED.
+- CANCELLED, REFUNDED, EXPIRED → terminal.
+
+### Order product status flow
+- RESERVED → PROCESSING, CANCELLED, EXPIRED.
+- PROCESSING → PROCESSED, EXPIRED, CANCELLED, FAILED.
+- PROCESSED → REFUNDED, CANCELLED.
+- FAILED → PROCESSING, EXPIRED, CANCELLED.
+- CANCELLED, REFUNDED, EXPIRED → terminal.
+
+---
+
+## Payments (payments function)
+
+- **Create**: Tied to order; status PENDING or APPROVED (free order). Payment method mapping: e.g. visa/master/credit_card → CREDIT_CARD; pix/bank_transfer → PIX/BANK_TRANSFER; etc. (see mapPaymentMethodIdToEnum in orderController).
+- **Webhook (provider confirmation)**: Payment ID from URL; payment and order must exist. Provider confirms payment; then by status: APPROVED → payment APPROVED, inventory confirmed (reserved → deducted), order PROCESSED, order products PROCESSED; CANCELLED → payment CANCELLED, inventory released, order CANCELLED, order products CANCELLED; REFUNDED/CHARGED_BACK → payment updated, order REFUNDED, order products REFUNDED; PENDING/PROCESSING/MEDIATION → only payment record updated; otherwise → payment FAILED, inventory released, order FAILED, order products FAILED.
+- **List payments**: Authenticated; default filter by `req.user.id` if `user_id` not in query.
+
+---
+
+## Firestore trigger: on_update_payment_trigger
+
+- **Trigger**: `onDocumentWritten("payments/{paymentId}")`. Only runs when status changes from non-APPROVED to APPROVED.
+- **Order**: Order must exist for `payment.order_id`. Order items drive creation of user products.
+- **User products**: For each order item: product must exist; product `parent_id` must equal `item.metadata.parent_id` (or equivalent). One user product document per unit (quantity loop); each has `split_id`, `user_id`, `product_id`, `parent_id`, `status=ACTIVE`, `purchase_date`, `valid_from`, `valid_until` from product, `price`, `currency`, `payment_id`, `metadata` (without `additional_data`); `additional_data` from `metadata.additional_data[i]` for the i-th unit. Collection: `userProducts`, doc id = new UUID per unit.
+- **Invitation**: If `order.metadata.invitation_id` is set: invitation must exist; if invitation status is DECLINED, do not set to ACCEPTED; else update invitation to status ACCEPTED and set `metadata.order_id`, `metadata.payment_id`, and optional `message` from order metadata.
+
+---
+
+## Users (users function)
+
+- **Create user**: Email required. Display name required. User id from `req.user.id` (Firebase Auth).
+- **Update user**: User must exist.
+- **Get user**: User must exist.
+
+---
+
+## Addresses (users function)
+
+- **Create**: `street`, `city`, `state`, `postalCode`, `country`, `type` required. `userId` from `req.user.id`.
+- **Update / Get by id / Delete**: Address must exist and `address.userId === req.user.id` (unauthorized otherwise).
+
+---
+
+## Inventory (events vs payments)
+
+- **Events**: Inventory documents for tickets use id `TICKET_<ticketId>`. Created with ticket; updated when ticket quantity/value changes; on event delete, available_quantity set to 0 and metadata marks event_deleted.
+- **Payments**: Inventory documents use id `PRODUCT_<productId>`. Reserve: decrease available_quantity, increase reserved_quantity; release: reverse; confirm: decrease reserved_quantity only. Insufficient available_quantity on reserve throws.
+
+---
+
+## Auth and authorization
+
+- **Events**: Routes use `authenticateUser` (Firebase ID token → `req.user.id`, `req.user.role`). `requireRole([Roles.ADMIN, Roles.ORGANIZER])` on create/update/delete event and validate-deletion; role check is present but currently relaxed in implementation. Public routes: get invitation by id, decline invitation, get invitation products, update user ticket additional data by invitation (with inviter_id fallback).
+- **Payments**: Authenticated request required for create order (or invitation_id in metadata), list orders, list/get payments; webhook and public config/order routes do not require auth.
+- **Users**: Authenticated for all user and address routes; address operations require resource ownership.

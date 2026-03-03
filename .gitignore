@@ -1,0 +1,10 @@
+venv/
+.venv/
+__pycache__/
+*.egg-info/
+*.pyc
+.python-version
+firebase-debug.log
+firebase-debug.*.log
+.env
+*.local
