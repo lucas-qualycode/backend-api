@@ -7,7 +7,7 @@ This document is the complete reference for the **backend_api** repo: layout, co
 ## Overview
 
 - **Stack**: FastAPI, Firestore (Firebase), Firebase Auth. Runs as HTTP API (e.g. via Mangum on Firebase Functions).
-- **Role**: Event/social backend: events, tickets, stands, schedules, invitations, attendees, user products, orders, payments, users, addresses. Mirrors behavior of the Node backend in `backend/` where applicable.
+- **Role**: Event/social API: events, tickets, stands, schedules, invitations, attendees, user products, orders, payments, users, addresses.
 - **Entry**: `main.py` wires the FastAPI app for Firebase; `app.py` defines the app and routers. Use `app` from `backend_api.app` for local runs or tests.
 - **Health**: `GET /health` returns `{"status": "ok", "timestamp": "<ISO UTC>"}`. No auth.
 
@@ -230,7 +230,7 @@ Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, l
 
 - **Firestore**: Collection names in `infrastructure/config.py`. Client from `infrastructure.firebase.get_firestore_client()`. Firebase Admin is initialized in `main.py` when not already initialized.
 - **Local**: From repo root, `PYTHONPATH=. uvicorn backend_api.app:app --reload` (or set `PYTHONPATH`). For Firebase emulator, use the entry point that mounts `main.api`.
-- **Business rules**: Validations, status transitions, and domain rules are in `docs/backend-business-rules.mdc`; keep code and that doc aligned. Event delete in backend_api is soft-delete only; there is no `validate-deletion` endpoint (unlike the Node backend).
+- **Business rules**: Validations, status transitions, and domain rules are in `docs/backend-business-rules.mdc`; keep code and that doc aligned. Event delete is soft-delete only; there is no `validate-deletion` endpoint.
 
 ---
 
