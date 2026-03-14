@@ -23,6 +23,7 @@ except ValueError:
     initialize_app()
 
 from backend_api.app import app
+from backend_api.triggers.payment_approval import on_payment_status_changed  # noqa: F401
 
 try:
     import firebase_functions.private.serving as _serving

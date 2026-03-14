@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from backend_api.api.auth import CurrentUser, RequireOrganizer, get_current_user
 from backend_api.api.deps import get_event_type_repository
 from backend_api.application.event_types import (
     create_event_type,
@@ -41,10 +42,10 @@ def get_event_type_endpoint(id: str, repo=Depends(get_event_type_repository)):
 @router.post("", status_code=201)
 def create_event_type_endpoint(
     data: CreateEventTypeInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_type_repository),
 ):
-    return create_event_type(repo, data, x_user_id, get_timestamp()).model_dump(mode="json")
+    return create_event_type(repo, data, current_user.uid, get_timestamp()).model_dump(mode="json")
 
 
 @router.put("/{id}")
@@ -52,11 +53,11 @@ def create_event_type_endpoint(
 def update_event_type_endpoint(
     id: str,
     data: UpdateEventTypeInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_type_repository),
 ):
     try:
-        return update_event_type(repo, id, data, x_user_id, get_timestamp()).model_dump(mode="json")
+        return update_event_type(repo, id, data, current_user.uid, get_timestamp()).model_dump(mode="json")
     except EventTypeNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -64,10 +65,10 @@ def update_event_type_endpoint(
 @router.delete("/{id}")
 def delete_event_type_endpoint(
     id: str,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_type_repository),
 ):
     try:
-        return delete_event_type(repo, id, x_user_id).model_dump(mode="json")
+        return delete_event_type(repo, id, current_user.uid).model_dump(mode="json")
     except EventTypeNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

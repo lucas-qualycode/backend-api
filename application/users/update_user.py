@@ -18,8 +18,8 @@ def update_user(
         p = updates["preferences"]
         updates["preferences"] = UserPreferences(
             notifications=p.get("notifications", True),
-            language=p.get("language", "en"),
-            timezone=p.get("timezone", "UTC"),
+            language=p.get("language", "pt-BR"),
+            timezone=p.get("timezone", "UTC-3"),
         )
     updated_user = existing.model_copy(update={**updates, "updatedAt": updated_at})
     return repo.update(user_id, updated_user)

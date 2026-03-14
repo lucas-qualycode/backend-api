@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from backend_api.api.auth import CurrentUser, RequireOrganizer, get_current_user
 from backend_api.api.deps import get_stand_repository
 from backend_api.application.stands import (
     create_stand,
@@ -44,11 +45,11 @@ def get_stand_endpoint(event_id: str, id: str, repo=Depends(get_stand_repository
 def create_stand_endpoint(
     event_id: str,
     data: CreateStandInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_stand_repository),
 ):
     try:
-        return create_stand(repo, data, event_id, x_user_id, get_timestamp()).model_dump(mode="json")
+        return create_stand(repo, data, event_id, current_user.uid, get_timestamp()).model_dump(mode="json")
     except StandNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -59,11 +60,11 @@ def update_stand_endpoint(
     event_id: str,
     id: str,
     data: UpdateStandInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_stand_repository),
 ):
     try:
-        return update_stand(repo, id, event_id, data, x_user_id, get_timestamp()).model_dump(mode="json")
+        return update_stand(repo, id, event_id, data, current_user.uid, get_timestamp()).model_dump(mode="json")
     except StandNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -72,10 +73,10 @@ def update_stand_endpoint(
 def delete_stand_endpoint(
     event_id: str,
     id: str,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_stand_repository),
 ):
     try:
-        return delete_stand(repo, id, event_id, x_user_id).model_dump(mode="json")
+        return delete_stand(repo, id, event_id, current_user.uid).model_dump(mode="json")
     except StandNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

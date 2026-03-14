@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from backend_api.api.auth import CurrentUser, RequireOrganizer, get_current_user
 from backend_api.api.deps import get_product_repository
 from backend_api.application.products import (
     create_product,
@@ -42,10 +43,10 @@ def get_product_endpoint(id: str, repo=Depends(get_product_repository)):
 @router.post("", status_code=201)
 def create_product_endpoint(
     data: CreateProductInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_product_repository),
 ):
-    return create_product(repo, data, x_user_id, get_timestamp()).model_dump(mode="json")
+    return create_product(repo, data, current_user.uid, get_timestamp()).model_dump(mode="json")
 
 
 @router.put("/{id}")
@@ -53,11 +54,11 @@ def create_product_endpoint(
 def update_product_endpoint(
     id: str,
     data: UpdateProductInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_product_repository),
 ):
     try:
-        return update_product(repo, id, data, x_user_id, get_timestamp()).model_dump(mode="json")
+        return update_product(repo, id, data, current_user.uid, get_timestamp()).model_dump(mode="json")
     except ProductNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

@@ -1,16 +1,20 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.deps import get_event_repository
+from backend_api.api.auth import CurrentUser, RequireOrganizer, UserOrGuestListAuth, get_current_user, get_user_or_guest_list
+from backend_api.api.deps import get_event_repository, get_user_product_repository
 from backend_api.application.events import (
     create_event,
     delete_event,
+    generate_guest_list_token,
     get_event,
     list_events,
     update_event,
 )
 from backend_api.application.events.schemas import CreateEventInput, UpdateEventInput
+from backend_api.application.user_products.list_user_products import list_user_products
 from backend_api.domain.events.entity import EventQueryParams
 from backend_api.domain.events.exceptions import EventNotFoundError
+from backend_api.domain.user_products.entity import UserProductQueryParams
 from backend_api.infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -51,13 +55,42 @@ def get_event_endpoint(id: str, repo=Depends(get_event_repository)):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get("/{id}/user-products")
+def list_event_user_products_endpoint(
+    id: str,
+    auth: UserOrGuestListAuth = Depends(get_user_or_guest_list),
+    event_repo=Depends(get_event_repository),
+    user_product_repo=Depends(get_user_product_repository),
+):
+    try:
+        get_event(event_repo, id)
+    except EventNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    params = UserProductQueryParams(parent_id=id, status="ACTIVE")
+    items = list_user_products(user_product_repo, params)
+    return [u.model_dump(mode="json") for u in items]
+
+
+@router.post("/{id}/guest-list-token")
+def generate_guest_list_token_endpoint(
+    id: str,
+    current_user: CurrentUser = RequireOrganizer,
+    repo=Depends(get_event_repository),
+):
+    try:
+        token = generate_guest_list_token(repo, id, current_user.uid, get_timestamp())
+        return {"token": token}
+    except EventNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.post("", status_code=201)
 def create_event_endpoint(
     data: CreateEventInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_repository),
 ):
-    event = create_event(repo, data, x_user_id, get_timestamp())
+    event = create_event(repo, data, current_user.uid, get_timestamp())
     return event.model_dump(mode="json")
 
 
@@ -66,11 +99,11 @@ def create_event_endpoint(
 def update_event_endpoint(
     id: str,
     data: UpdateEventInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_repository),
 ):
     try:
-        event = update_event(repo, id, data, x_user_id, get_timestamp())
+        event = update_event(repo, id, data, current_user.uid, get_timestamp())
         return event.model_dump(mode="json")
     except EventNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -79,11 +112,11 @@ def update_event_endpoint(
 @router.delete("/{id}")
 def delete_event_endpoint(
     id: str,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_repository),
 ):
     try:
-        event = delete_event(repo, id, x_user_id)
+        event = delete_event(repo, id, current_user.uid)
         return event.model_dump(mode="json")
     except EventNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

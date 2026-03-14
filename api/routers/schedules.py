@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from backend_api.api.auth import CurrentUser, RequireOrganizer, get_current_user
 from backend_api.api.deps import get_schedule_repository
 from backend_api.application.schedules import (
     create_schedule,
@@ -40,10 +41,10 @@ def get_schedule_endpoint(id: str, repo=Depends(get_schedule_repository)):
 @router.post("", status_code=201)
 def create_schedule_endpoint(
     data: CreateScheduleInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_schedule_repository),
 ):
-    return create_schedule(repo, data, x_user_id, get_timestamp()).model_dump(mode="json")
+    return create_schedule(repo, data, current_user.uid, get_timestamp()).model_dump(mode="json")
 
 
 @router.put("/{id}")
@@ -51,11 +52,11 @@ def create_schedule_endpoint(
 def update_schedule_endpoint(
     id: str,
     data: UpdateScheduleInput,
-    x_user_id: str = Header("", alias="X-User-Id"),
+    current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_schedule_repository),
 ):
     try:
-        return update_schedule(repo, id, data, x_user_id, get_timestamp()).model_dump(mode="json")
+        return update_schedule(repo, id, data, current_user.uid, get_timestamp()).model_dump(mode="json")
     except ScheduleNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

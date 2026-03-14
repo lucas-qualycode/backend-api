@@ -3,8 +3,8 @@ from pydantic import BaseModel
 
 class UserPreferencesInput(BaseModel):
     notifications: bool = True
-    language: str = "en"
-    timezone: str = "UTC"
+    language: str = "pt-BR"
+    timezone: str = "UTC-3"
 
 
 class CreateUserInput(BaseModel):

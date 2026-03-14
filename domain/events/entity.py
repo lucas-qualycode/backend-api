@@ -20,6 +20,7 @@ class Event(BaseModel):
     updated_at: str
     created_by: str
     last_updated_by: str
+    guest_list_token: str | None = None
 
 
 class EventQueryParams(BaseModel):

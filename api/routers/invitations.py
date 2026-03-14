@@ -3,6 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from backend_api.api.auth import CurrentUser, get_current_user, get_optional_user
 from backend_api.api.deps import get_invitation_repository
 from backend_api.application.invitations import (
     create_invitation,
@@ -26,6 +27,7 @@ class UpdateInvitationStatusBody(BaseModel):
 
 @router.get("")
 def list_invitations_endpoint(
+    current_user: CurrentUser = Depends(get_current_user),
     event_id: str | None = None,
     inviter_id: str | None = None,
     status: str | None = None,
@@ -33,13 +35,17 @@ def list_invitations_endpoint(
     offset: int | None = None,
     repo=Depends(get_invitation_repository),
 ):
-    params = InvitationQueryParams(event_id=event_id, inviter_id=inviter_id, status=status, limit=limit, offset=offset)
+    params = InvitationQueryParams(event_id=event_id, inviter_id=inviter_id or current_user.uid, status=status, limit=limit, offset=offset)
     items = list_invitations(repo, params)
     return [i.model_dump(mode="json") for i in items]
 
 
 @router.get("/{id}")
-def get_invitation_endpoint(id: str, repo=Depends(get_invitation_repository)):
+def get_invitation_endpoint(
+    id: str,
+    current_user: CurrentUser | None = Depends(get_optional_user),
+    repo=Depends(get_invitation_repository),
+):
     try:
         return get_invitation(repo, id).model_dump(mode="json")
     except InvitationNotFoundError as e:
@@ -47,13 +53,22 @@ def get_invitation_endpoint(id: str, repo=Depends(get_invitation_repository)):
 
 
 @router.post("", status_code=201)
-def create_invitation_endpoint(data: CreateInvitationInput, repo=Depends(get_invitation_repository)):
+def create_invitation_endpoint(
+    data: CreateInvitationInput,
+    current_user: CurrentUser = Depends(get_current_user),
+    repo=Depends(get_invitation_repository),
+):
     return create_invitation(repo, data, get_timestamp()).model_dump(mode="json")
 
 
 @router.put("/{id}")
 @router.patch("/{id}")
-def update_invitation_endpoint(id: str, data: UpdateInvitationInput, repo=Depends(get_invitation_repository)):
+def update_invitation_endpoint(
+    id: str,
+    data: UpdateInvitationInput,
+    current_user: CurrentUser = Depends(get_current_user),
+    repo=Depends(get_invitation_repository),
+):
     try:
         return update_invitation(repo, id, data, get_timestamp()).model_dump(mode="json")
     except InvitationNotFoundError as e:
@@ -64,6 +79,7 @@ def update_invitation_endpoint(id: str, data: UpdateInvitationInput, repo=Depend
 def update_invitation_status_endpoint(
     id: str,
     body: UpdateInvitationStatusBody,
+    current_user: CurrentUser = Depends(get_current_user),
     repo=Depends(get_invitation_repository),
 ):
     try:

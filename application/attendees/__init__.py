@@ -1,3 +1,4 @@
+from backend_api.application.attendees.check_in_attendee import check_in_attendee
 from backend_api.application.attendees.create_attendee import create_attendee
 from backend_api.application.attendees.get_attendee import get_attendee
 from backend_api.application.attendees.list_attendees import list_attendees
@@ -8,4 +9,5 @@ __all__ = [
     "list_attendees",
     "create_attendee",
     "update_attendee_status",
+    "check_in_attendee",
 ]
