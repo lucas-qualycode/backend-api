@@ -14,6 +14,10 @@ def create_user(
             notifications=data.preferences.notifications,
             language=data.preferences.language,
             timezone=data.preferences.timezone,
+            themeMode=data.preferences.themeMode,
+            density=data.preferences.density,
+            fontSize=data.preferences.fontSize,
+            reducedMotion=data.preferences.reducedMotion,
         )
     user = User(
         id=data.id,

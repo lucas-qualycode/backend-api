@@ -6,7 +6,7 @@ This document is the complete reference for the **backend_api** repo: layout, co
 
 ## Overview
 
-- **Stack**: FastAPI, Firestore (Firebase), Firebase Auth. Runs as HTTP API (e.g. via Mangum on Firebase Functions).
+- **Stack**: FastAPI, Firestore (Firebase), Firebase Auth. Python **3.12+** (`pyproject.toml`). Runs as HTTP API (e.g. via Mangum on Firebase Functions).
 - **Role**: Event/social API: events, tickets, stands, schedules, invitations, attendees, user products, orders, payments, users, addresses.
 - **Entry**: `main.py` wires the FastAPI app for Firebase; `app.py` defines the app and routers. Use `app` from `backend_api.app` for local runs or tests.
 - **Health**: `GET /health` returns `{"status": "ok", "timestamp": "<ISO UTC>"}`. No auth.
@@ -68,7 +68,6 @@ backend_api/
 │   └── persistence/        # firestore_common (get_timestamp, apply_filters), firestore_*.py repos
 ├── triggers/               # payment_approval: on_document_written("payments/{paymentId}")
 ├── utils/                  # errors (ValidationError, NotFoundError), validators (validate_name, validate_url, NAME_MAX_LENGTH, URL_REGEX)
-├── docs/                   # backend-business-rules.mdc
 ├── app.py                  # FastAPI app, router includes, exception handlers
 ├── main.py                 # Firebase entry, Mangum handler
 └── cursor.md               # This file
@@ -153,7 +152,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | **Users** (`prefix=/users`) | | |
 | POST | `/users` | user |
 | GET | `/users/{id}` | user |
-| PUT/PATCH | `/users/{id}` | user |
+| PUT/PATCH | `/users/{id}` | user (see **Users** below for `preferences` merge) |
 | **Addresses** (`prefix=/addresses`) | | |
 | GET | `/addresses` | user (default filter by current user) |
 | GET | `/addresses/{id}` | user |
@@ -174,6 +173,12 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | PATCH | `/payments/{id}/status` | user |
 
 **Public (no auth)**: `/health`, `GET /events`, `GET /events/{id}`, `GET /event-types`, `GET /event-types/{id}`, `GET /schedules`, `GET /schedules/{id}`, `GET /products`, `GET /products/{id}`. **Optional auth**: `GET /invitations/{id}`.
+
+### Users (`/users`)
+
+- **User** (`domain/users/entity.py`): `id`, `email`, `displayName`, `photoURL`, `emailVerified`, `createdAt`, `updatedAt`, `phoneNumber`, **`preferences`**.
+- **UserPreferences**: `notifications` (bool), `language`, `timezone`, **`themeMode`** (`system` \| `light` \| `dark`), **`density`** (`default` \| `compact` \| `comfortable`), **`fontSize`** (`standard` \| `large`), **`reducedMotion`** (`system` \| `reduce` \| `full`).
+- **PATCH/PUT partial updates**: When the body includes `preferences`, the API **merges** into the existing `UserPreferences` instead of replacing the whole object with missing fields: only provided keys are applied on top of the stored preferences (`application/users/update_user.py`). Omit `preferences` to leave them unchanged.
 
 ---
 
@@ -216,13 +221,13 @@ Success responses: single entity or list of entities as JSON (`model_dump(mode="
 
 ## Triggers
 
-- **Payment approval** (`triggers/payment_approval.py`): Firestore trigger `on_document_written(document="payments/{paymentId}")`. Runs only when payment status transitions from non-APPROVED to APPROVED. Calls `process_payment_approval` (in `application/payments/process_payment_approval.py`) with payment, order, product, user_product, and invitation repos: creates user products from order items, updates inventory, and if order has `metadata.invitation_id` updates invitation to ACCEPTED (unless DECLINED). See `docs/backend-business-rules.mdc` for full business flow.
+- **Payment approval** (`triggers/payment_approval.py`): Firestore trigger `on_document_written(document="payments/{paymentId}")`. Runs only when payment status transitions from non-APPROVED to APPROVED. Calls `process_payment_approval` (in `application/payments/process_payment_approval.py`) with payment, order, product, user_product, and invitation repos: creates user products from order items, updates inventory, and if order has `metadata.invitation_id` updates invitation to ACCEPTED (unless DECLINED). See `.cursor/rules/backend-business-rules.mdc` for full business flow.
 
 ---
 
 ## Domain entities (reference)
 
-Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, location, active, is_paid, is_online, type_ids, imageURL, deleted, created_at, updated_at, created_by, last_updated_by, guest_list_token); **Attendee** (id, event_id, user_id, user_product_id, invitation_id, status, check_in_time, created_at, updated_at, metadata); **UserProduct** (id, parent_id, product_id, user_id, status, quantity, price, currency, purchase_date, valid_from, valid_until, …); **Product**, **Order**, **Payment**, **Invitation**, **Stand**, **Schedule**, **EventType**, **User**, **Address**. Query params live in the same entity file with a `FILTER_SPEC` class attribute for Firestore filters. Exceptions: `domain/<agg>/exceptions.py` (e.g. `EventNotFoundError(event_id)`).
+Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, location, active, is_paid, is_online, type_ids, imageURL, deleted, created_at, updated_at, created_by, last_updated_by, guest_list_token); **Attendee** (id, event_id, user_id, user_product_id, invitation_id, status, check_in_time, created_at, updated_at, metadata); **UserProduct** (id, parent_id, product_id, user_id, status, quantity, price, currency, purchase_date, valid_from, valid_until, …); **Product**, **Order**, **Payment**, **Invitation**, **Stand**, **Schedule**, **EventType**, **User** (includes **UserPreferences** with appearance fields as above), **Address**. Query params live in the same entity file with a `FILTER_SPEC` class attribute for Firestore filters. Exceptions: `domain/<agg>/exceptions.py` (e.g. `EventNotFoundError(event_id)`).
 
 ---
 
@@ -230,7 +235,7 @@ Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, l
 
 - **Firestore**: Collection names in `infrastructure/config.py`. Client from `infrastructure.firebase.get_firestore_client()`. Firebase Admin is initialized in `main.py` when not already initialized.
 - **Local**: From repo root, `PYTHONPATH=. uvicorn backend_api.app:app --reload` (or set `PYTHONPATH`). For Firebase emulator, use the entry point that mounts `main.api`.
-- **Business rules**: Validations, status transitions, and domain rules are in `docs/backend-business-rules.mdc`; keep code and that doc aligned. Event delete is soft-delete only; there is no `validate-deletion` endpoint.
+- **Business rules**: Validations, status transitions, and domain rules are in `.cursor/rules/backend-business-rules.mdc` at the repo root; keep code and that doc aligned. Event delete is soft-delete only; there is no `validate-deletion` endpoint.
 
 ---
 

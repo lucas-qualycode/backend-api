@@ -16,10 +16,13 @@ def update_user(
     updates = data.model_dump(exclude_unset=True)
     if "preferences" in updates and updates["preferences"] is not None:
         p = updates["preferences"]
-        updates["preferences"] = UserPreferences(
-            notifications=p.get("notifications", True),
-            language=p.get("language", "pt-BR"),
-            timezone=p.get("timezone", "UTC-3"),
-        )
+        base = existing.preferences.model_dump()
+        if isinstance(p, dict):
+            merged = {k: v for k, v in p.items() if v is not None}
+        else:
+            merged = p.model_dump(exclude_unset=True)
+        allowed = set(UserPreferences.model_fields)
+        base.update({k: v for k, v in merged.items() if k in allowed})
+        updates["preferences"] = UserPreferences(**base)
     updated_user = existing.model_copy(update={**updates, "updatedAt": updated_at})
     return repo.update(user_id, updated_user)

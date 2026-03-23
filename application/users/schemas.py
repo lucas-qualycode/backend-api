@@ -1,10 +1,21 @@
+from typing import Literal
+
 from pydantic import BaseModel
+
+ThemeMode = Literal["system", "light", "dark"]
+Density = Literal["default", "compact", "comfortable"]
+FontSizePref = Literal["standard", "large"]
+ReducedMotion = Literal["system", "reduce", "full"]
 
 
 class UserPreferencesInput(BaseModel):
     notifications: bool = True
     language: str = "pt-BR"
     timezone: str = "UTC-3"
+    themeMode: ThemeMode = "system"
+    density: Density = "default"
+    fontSize: FontSizePref = "standard"
+    reducedMotion: ReducedMotion = "system"
 
 
 class CreateUserInput(BaseModel):
