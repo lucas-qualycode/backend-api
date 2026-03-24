@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.schedules.entity import Schedule, ScheduleQueryParams
+from domain.schedules.entity import Schedule, ScheduleQueryParams
 
 
 class ScheduleRepository(ABC):

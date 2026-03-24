@@ -1,7 +1,7 @@
-from backend_api.application.user_products.schemas import UpdateUserProductInput
-from backend_api.domain.user_products.entity import UserProduct
-from backend_api.domain.user_products.exceptions import UserProductNotFoundError
-from backend_api.domain.user_products.repository import UserProductRepository
+from application.user_products.schemas import UpdateUserProductInput
+from domain.user_products.entity import UserProduct
+from domain.user_products.exceptions import UserProductNotFoundError
+from domain.user_products.repository import UserProductRepository
 
 
 def update_user_product(

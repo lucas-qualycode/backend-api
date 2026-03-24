@@ -1,6 +1,6 @@
-from backend_api.domain.products.entity import Product
-from backend_api.domain.products.exceptions import ProductNotFoundError
-from backend_api.domain.products.repository import ProductRepository
+from domain.products.entity import Product
+from domain.products.exceptions import ProductNotFoundError
+from domain.products.repository import ProductRepository
 
 
 def get_product(repo: ProductRepository, product_id: str) -> Product:

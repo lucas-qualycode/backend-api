@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.attendees.entity import Attendee, AttendeeQueryParams
-from backend_api.domain.attendees.repository import AttendeeRepository
-from backend_api.infrastructure.config import EVENTS_COLLECTION_NAME, ATTENDEES_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters, get_timestamp
+from domain.attendees.entity import Attendee, AttendeeQueryParams
+from domain.attendees.repository import AttendeeRepository
+from infrastructure.config import EVENTS_COLLECTION_NAME, ATTENDEES_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters, get_timestamp
 
 
 class FirestoreAttendeeRepository(AttendeeRepository):

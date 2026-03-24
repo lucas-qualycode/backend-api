@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from backend_api.api.auth import CurrentUser, get_current_user
-from backend_api.api.deps import get_address_repository
-from backend_api.application.addresses import (
+from api.auth import CurrentUser, get_current_user
+from api.deps import get_address_repository
+from application.addresses import (
     create_address,
     delete_address,
     get_address,
     list_addresses,
     update_address,
 )
-from backend_api.application.addresses.schemas import CreateAddressInput, UpdateAddressInput
-from backend_api.domain.addresses.entity import AddressQueryParams
-from backend_api.domain.addresses.exceptions import AddressNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.addresses.schemas import CreateAddressInput, UpdateAddressInput
+from domain.addresses.entity import AddressQueryParams
+from domain.addresses.exceptions import AddressNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/addresses", tags=["addresses"])
 

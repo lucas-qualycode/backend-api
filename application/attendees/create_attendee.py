@@ -1,8 +1,8 @@
 import uuid
 
-from backend_api.application.attendees.schemas import CreateAttendeeInput
-from backend_api.domain.attendees.entity import Attendee
-from backend_api.domain.attendees.repository import AttendeeRepository
+from application.attendees.schemas import CreateAttendeeInput
+from domain.attendees.entity import Attendee
+from domain.attendees.repository import AttendeeRepository
 
 
 def create_attendee(

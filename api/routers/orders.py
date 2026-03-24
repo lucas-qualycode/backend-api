@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.auth import CurrentUser, get_current_user
-from backend_api.api.deps import get_order_repository
-from backend_api.application.orders import create_order, get_order, list_orders, update_order_status
-from backend_api.application.orders.schemas import CreateOrderInput, UpdateOrderStatusInput
-from backend_api.domain.orders.entity import OrderQueryParams
-from backend_api.domain.orders.exceptions import OrderNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from api.auth import CurrentUser, get_current_user
+from api.deps import get_order_repository
+from application.orders import create_order, get_order, list_orders, update_order_status
+from application.orders.schemas import CreateOrderInput, UpdateOrderStatusInput
+from domain.orders.entity import OrderQueryParams
+from domain.orders.exceptions import OrderNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 

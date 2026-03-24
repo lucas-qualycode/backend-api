@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from backend_api.api.auth import CurrentUser, get_current_user
-from backend_api.api.deps import get_user_product_repository
-from backend_api.application.user_products import (
+from api.auth import CurrentUser, get_current_user
+from api.deps import get_user_product_repository
+from application.user_products import (
     create_user_product,
     get_user_product,
     list_user_products,
     update_user_product,
     update_user_product_status,
 )
-from backend_api.application.user_products.schemas import CreateUserProductInput, UpdateUserProductInput
-from backend_api.domain.user_products.entity import UserProductQueryParams
-from backend_api.domain.user_products.exceptions import UserProductNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.user_products.schemas import CreateUserProductInput, UpdateUserProductInput
+from domain.user_products.entity import UserProductQueryParams
+from domain.user_products.exceptions import UserProductNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/user-products", tags=["user-products"])
 

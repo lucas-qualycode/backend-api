@@ -1,5 +1,5 @@
-from backend_api.domain.payments.entity import Payment, PaymentQueryParams
-from backend_api.domain.payments.repository import PaymentRepository
+from domain.payments.entity import Payment, PaymentQueryParams
+from domain.payments.repository import PaymentRepository
 
 
 def list_payments(

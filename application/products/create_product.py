@@ -1,8 +1,8 @@
 import uuid
 
-from backend_api.application.products.schemas import CreateProductInput
-from backend_api.domain.products.entity import Product
-from backend_api.domain.products.repository import ProductRepository
+from application.products.schemas import CreateProductInput
+from domain.products.entity import Product
+from domain.products.repository import ProductRepository
 
 
 def create_product(

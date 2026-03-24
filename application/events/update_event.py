@@ -1,8 +1,8 @@
-from backend_api.application.events.schemas import UpdateEventInput
-from backend_api.domain.events.entity import Event
-from backend_api.domain.events.exceptions import EventNotFoundError
-from backend_api.domain.events.repository import EventRepository
-from backend_api.utils.validators import validate_name, validate_url
+from application.events.schemas import UpdateEventInput
+from domain.events.entity import Event
+from domain.events.exceptions import EventNotFoundError
+from domain.events.repository import EventRepository
+from utils.validators import validate_name, validate_url
 
 
 def update_event(

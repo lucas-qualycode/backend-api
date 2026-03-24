@@ -5,7 +5,7 @@ from fastapi import Depends, Header, HTTPException, Request
 
 from firebase_admin import auth as firebase_auth
 
-from backend_api.api.deps import get_event_repository
+from api.deps import get_event_repository
 
 
 class UserOrGuestListAuth:

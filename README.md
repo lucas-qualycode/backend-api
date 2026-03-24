@@ -11,10 +11,11 @@ make run
 
 Then call the API at the URL shown (e.g. `http://127.0.0.1:5001/.../api`). All routes are under that path (e.g. `.../api/health`, `.../api/events`).
 
-To run the API locally against the emulator (Auth, Firestore, Functions):
+To run the API locally against the emulator (Auth, Firestore, Functions), from the `backend_api` directory:
 
 ```bash
-FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=partiiu-app PYTHONPATH=. uvicorn backend_api.app:app --reload --host 0.0.0.0 --port 8000
+cd backend_api
+FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 GCLOUD_PROJECT=partiiu-app PYTHONPATH=. uvicorn app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-From repo root.
+From the repository root instead: `PYTHONPATH=backend_api uvicorn app:app` (same env vars).

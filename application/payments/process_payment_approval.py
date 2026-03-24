@@ -1,16 +1,16 @@
 import logging
 from datetime import datetime, timezone
 
-from backend_api.application.invitations import update_invitation_status
-from backend_api.application.user_products import create_user_product
-from backend_api.application.user_products.schemas import CreateUserProductInput
-from backend_api.domain.orders.repository import OrderRepository
-from backend_api.domain.payments.repository import PaymentRepository
-from backend_api.domain.products.repository import ProductRepository
-from backend_api.domain.invitations.repository import InvitationRepository
-from backend_api.domain.user_products.repository import UserProductRepository
+from application.invitations import update_invitation_status
+from application.user_products import create_user_product
+from application.user_products.schemas import CreateUserProductInput
+from domain.orders.repository import OrderRepository
+from domain.payments.repository import PaymentRepository
+from domain.products.repository import ProductRepository
+from domain.invitations.repository import InvitationRepository
+from domain.user_products.repository import UserProductRepository
 
-log = logging.getLogger("backend_api.process_payment_approval")
+log = logging.getLogger("application.process_payment_approval")
 
 
 def process_payment_approval(

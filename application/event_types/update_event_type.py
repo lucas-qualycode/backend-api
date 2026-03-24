@@ -1,7 +1,7 @@
-from backend_api.domain.event_types.entity import EventType
-from backend_api.domain.event_types.exceptions import EventTypeNotFoundError
-from backend_api.domain.event_types.repository import EventTypeRepository
-from backend_api.application.event_types.schemas import UpdateEventTypeInput
+from domain.event_types.entity import EventType
+from domain.event_types.exceptions import EventTypeNotFoundError
+from domain.event_types.repository import EventTypeRepository
+from application.event_types.schemas import UpdateEventTypeInput
 
 
 def update_event_type(

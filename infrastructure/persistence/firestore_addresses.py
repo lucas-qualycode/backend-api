@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.addresses.entity import Address, AddressQueryParams
-from backend_api.domain.addresses.repository import AddressRepository
-from backend_api.infrastructure.config import ADDRESSES_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters
+from domain.addresses.entity import Address, AddressQueryParams
+from domain.addresses.repository import AddressRepository
+from infrastructure.config import ADDRESSES_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters
 
 
 class FirestoreAddressRepository(AddressRepository):

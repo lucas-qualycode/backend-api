@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.products.entity import Product, ProductQueryParams
+from domain.products.entity import Product, ProductQueryParams
 
 
 class ProductRepository(ABC):

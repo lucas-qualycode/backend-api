@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.addresses.entity import Address, AddressQueryParams
+from domain.addresses.entity import Address, AddressQueryParams
 
 
 class AddressRepository(ABC):

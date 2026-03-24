@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.schedules.entity import Schedule, ScheduleQueryParams
-from backend_api.domain.schedules.repository import ScheduleRepository
-from backend_api.infrastructure.config import SCHEDULES_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters
+from domain.schedules.entity import Schedule, ScheduleQueryParams
+from domain.schedules.repository import ScheduleRepository
+from infrastructure.config import SCHEDULES_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters
 
 
 class FirestoreScheduleRepository(ScheduleRepository):

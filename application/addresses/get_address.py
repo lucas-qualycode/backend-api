@@ -1,6 +1,6 @@
-from backend_api.domain.addresses.entity import Address
-from backend_api.domain.addresses.exceptions import AddressNotFoundError
-from backend_api.domain.addresses.repository import AddressRepository
+from domain.addresses.entity import Address
+from domain.addresses.exceptions import AddressNotFoundError
+from domain.addresses.repository import AddressRepository
 
 
 def get_address(repo: AddressRepository, address_id: str) -> Address:

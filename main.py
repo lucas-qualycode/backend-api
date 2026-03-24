@@ -3,9 +3,9 @@ import logging
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-_log = logging.getLogger("backend_api.main")
+_log = logging.getLogger("main")
 _log.setLevel(logging.INFO)
 if not _log.handlers:
     _h = logging.StreamHandler(sys.stdout)
@@ -22,8 +22,8 @@ try:
 except ValueError:
     initialize_app()
 
-from backend_api.app import app
-from backend_api.triggers.payment_approval import on_payment_status_changed  # noqa: F401
+from app import app
+from triggers.payment_approval import on_payment_status_changed  # noqa: F401
 
 try:
     import firebase_functions.private.serving as _serving

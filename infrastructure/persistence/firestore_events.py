@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.events.entity import Event, EventQueryParams
-from backend_api.domain.events.repository import EventRepository
-from backend_api.infrastructure.config import EVENTS_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import (
+from domain.events.entity import Event, EventQueryParams
+from domain.events.repository import EventRepository
+from infrastructure.config import EVENTS_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import (
     apply_filters,
     get_timestamp,
 )

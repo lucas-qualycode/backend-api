@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 
-from backend_api.api.routers import (
+from api.routers import (
     addresses_router,
     attendees_router,
     event_types_router,
@@ -18,21 +18,21 @@ from backend_api.api.routers import (
     user_products_router,
     users_router,
 )
-from backend_api.domain.addresses.exceptions import AddressNotFoundError
-from backend_api.domain.attendees.exceptions import AttendeeNotFoundError
-from backend_api.domain.event_types.exceptions import EventTypeNotFoundError
-from backend_api.domain.events.exceptions import EventNotFoundError
-from backend_api.domain.invitations.exceptions import InvitationNotFoundError
-from backend_api.domain.orders.exceptions import OrderNotFoundError
-from backend_api.domain.payments.exceptions import PaymentNotFoundError
-from backend_api.domain.products.exceptions import ProductNotFoundError
-from backend_api.domain.schedules.exceptions import ScheduleNotFoundError
-from backend_api.domain.stands.exceptions import StandNotFoundError
-from backend_api.domain.user_products.exceptions import UserProductNotFoundError
-from backend_api.domain.users.exceptions import UserNotFoundError
-from backend_api.utils.errors import NotFoundError, ValidationError
+from domain.addresses.exceptions import AddressNotFoundError
+from domain.attendees.exceptions import AttendeeNotFoundError
+from domain.event_types.exceptions import EventTypeNotFoundError
+from domain.events.exceptions import EventNotFoundError
+from domain.invitations.exceptions import InvitationNotFoundError
+from domain.orders.exceptions import OrderNotFoundError
+from domain.payments.exceptions import PaymentNotFoundError
+from domain.products.exceptions import ProductNotFoundError
+from domain.schedules.exceptions import ScheduleNotFoundError
+from domain.stands.exceptions import StandNotFoundError
+from domain.user_products.exceptions import UserProductNotFoundError
+from domain.users.exceptions import UserNotFoundError
+from utils.errors import NotFoundError, ValidationError
 
-log = logging.getLogger("backend_api")
+log = logging.getLogger("app")
 
 app = FastAPI(title="Event Social Media API")
 

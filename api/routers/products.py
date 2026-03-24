@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.auth import CurrentUser, RequireOrganizer, get_current_user
-from backend_api.api.deps import get_product_repository
-from backend_api.application.products import (
+from api.auth import CurrentUser, RequireOrganizer, get_current_user
+from api.deps import get_product_repository
+from application.products import (
     create_product,
     delete_product,
     get_product,
     list_products,
     update_product,
 )
-from backend_api.application.products.schemas import CreateProductInput, UpdateProductInput
-from backend_api.domain.products.entity import ProductQueryParams
-from backend_api.domain.products.exceptions import ProductNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.products.schemas import CreateProductInput, UpdateProductInput
+from domain.products.entity import ProductQueryParams
+from domain.products.exceptions import ProductNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/products", tags=["products"])
 

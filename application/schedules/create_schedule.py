@@ -1,8 +1,8 @@
 import uuid
 
-from backend_api.application.schedules.schemas import CreateScheduleInput
-from backend_api.domain.schedules.entity import Schedule, ScheduleExclusion
-from backend_api.domain.schedules.repository import ScheduleRepository
+from application.schedules.schemas import CreateScheduleInput
+from domain.schedules.entity import Schedule, ScheduleExclusion
+from domain.schedules.repository import ScheduleRepository
 
 
 def create_schedule(

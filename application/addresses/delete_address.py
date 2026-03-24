@@ -1,5 +1,5 @@
-from backend_api.domain.addresses.exceptions import AddressNotFoundError
-from backend_api.domain.addresses.repository import AddressRepository
+from domain.addresses.exceptions import AddressNotFoundError
+from domain.addresses.repository import AddressRepository
 
 
 def delete_address(repo: AddressRepository, address_id: str) -> None:

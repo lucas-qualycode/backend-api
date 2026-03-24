@@ -3,19 +3,19 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from backend_api.api.auth import CurrentUser, get_current_user, get_optional_user
-from backend_api.api.deps import get_invitation_repository
-from backend_api.application.invitations import (
+from api.auth import CurrentUser, get_current_user, get_optional_user
+from api.deps import get_invitation_repository
+from application.invitations import (
     create_invitation,
     get_invitation,
     list_invitations,
     update_invitation,
     update_invitation_status,
 )
-from backend_api.application.invitations.schemas import CreateInvitationInput, UpdateInvitationInput
-from backend_api.domain.invitations.entity import InvitationQueryParams
-from backend_api.domain.invitations.exceptions import InvitationNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.invitations.schemas import CreateInvitationInput, UpdateInvitationInput
+from domain.invitations.entity import InvitationQueryParams
+from domain.invitations.exceptions import InvitationNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/invitations", tags=["invitations"])
 

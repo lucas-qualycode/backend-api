@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.invitations.entity import Invitation, InvitationQueryParams
-from backend_api.domain.invitations.repository import InvitationRepository
-from backend_api.infrastructure.config import INVITATIONS_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters, get_timestamp
+from domain.invitations.entity import Invitation, InvitationQueryParams
+from domain.invitations.repository import InvitationRepository
+from infrastructure.config import INVITATIONS_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters, get_timestamp
 
 
 class FirestoreInvitationRepository(InvitationRepository):

@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.auth import CurrentUser, RequireOrganizer, get_current_user
-from backend_api.api.deps import get_stand_repository
-from backend_api.application.stands import (
+from api.auth import CurrentUser, RequireOrganizer, get_current_user
+from api.deps import get_stand_repository
+from application.stands import (
     create_stand,
     delete_stand,
     get_stand,
     list_stands,
     update_stand,
 )
-from backend_api.application.stands.schemas import CreateStandInput, UpdateStandInput
-from backend_api.domain.stands.entity import StandQueryParams
-from backend_api.domain.stands.exceptions import StandNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.stands.schemas import CreateStandInput, UpdateStandInput
+from domain.stands.entity import StandQueryParams
+from domain.stands.exceptions import StandNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/events", tags=["stands"])
 

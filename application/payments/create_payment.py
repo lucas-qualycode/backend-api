@@ -1,8 +1,8 @@
 import uuid
 
-from backend_api.application.payments.schemas import CreatePaymentInput
-from backend_api.domain.payments.entity import Payment
-from backend_api.domain.payments.repository import PaymentRepository
+from application.payments.schemas import CreatePaymentInput
+from domain.payments.entity import Payment
+from domain.payments.repository import PaymentRepository
 
 
 def create_payment(

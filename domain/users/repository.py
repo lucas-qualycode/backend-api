@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.users.entity import User
+from domain.users.entity import User
 
 
 class UserRepository(ABC):

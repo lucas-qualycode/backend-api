@@ -1,6 +1,6 @@
-from backend_api.domain.users.entity import User
-from backend_api.domain.users.exceptions import UserNotFoundError
-from backend_api.domain.users.repository import UserRepository
+from domain.users.entity import User
+from domain.users.exceptions import UserNotFoundError
+from domain.users.repository import UserRepository
 
 
 def get_user(repo: UserRepository, user_id: str) -> User:

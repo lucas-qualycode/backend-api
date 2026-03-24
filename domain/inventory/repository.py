@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.inventory.entity import InventoryItem, InventoryQueryParams
+from domain.inventory.entity import InventoryItem, InventoryQueryParams
 
 
 class InventoryRepository(ABC):

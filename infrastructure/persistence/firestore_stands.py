@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.stands.entity import Stand, StandQueryParams
-from backend_api.domain.stands.repository import StandRepository
-from backend_api.infrastructure.config import EVENTS_COLLECTION_NAME, STANDS_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import (
+from domain.stands.entity import Stand, StandQueryParams
+from domain.stands.repository import StandRepository
+from infrastructure.config import EVENTS_COLLECTION_NAME, STANDS_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import (
     apply_filters,
     get_timestamp,
 )

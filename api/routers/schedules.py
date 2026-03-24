@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.auth import CurrentUser, RequireOrganizer, get_current_user
-from backend_api.api.deps import get_schedule_repository
-from backend_api.application.schedules import (
+from api.auth import CurrentUser, RequireOrganizer, get_current_user
+from api.deps import get_schedule_repository
+from application.schedules import (
     create_schedule,
     delete_schedule,
     get_schedule,
     list_schedules,
     update_schedule,
 )
-from backend_api.application.schedules.schemas import CreateScheduleInput, UpdateScheduleInput
-from backend_api.domain.schedules.entity import ScheduleQueryParams
-from backend_api.domain.schedules.exceptions import ScheduleNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.schedules.schemas import CreateScheduleInput, UpdateScheduleInput
+from domain.schedules.entity import ScheduleQueryParams
+from domain.schedules.exceptions import ScheduleNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/schedules", tags=["schedules"])
 

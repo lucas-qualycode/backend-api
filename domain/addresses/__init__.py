@@ -1,3 +1,3 @@
-from backend_api.domain.addresses.entity import Address, AddressQueryParams
-from backend_api.domain.addresses.exceptions import AddressNotFoundError
-from backend_api.domain.addresses.repository import AddressRepository
+from domain.addresses.entity import Address, AddressQueryParams
+from domain.addresses.exceptions import AddressNotFoundError
+from domain.addresses.repository import AddressRepository

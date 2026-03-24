@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.attendees.entity import Attendee, AttendeeQueryParams
+from domain.attendees.entity import Attendee, AttendeeQueryParams
 
 
 class AttendeeRepository(ABC):

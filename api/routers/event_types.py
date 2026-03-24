@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.auth import CurrentUser, RequireOrganizer, get_current_user
-from backend_api.api.deps import get_event_type_repository
-from backend_api.application.event_types import (
+from api.auth import CurrentUser, RequireOrganizer, get_current_user
+from api.deps import get_event_type_repository
+from application.event_types import (
     create_event_type,
     delete_event_type,
     get_event_type,
     list_event_types,
     update_event_type,
 )
-from backend_api.application.event_types.schemas import CreateEventTypeInput, UpdateEventTypeInput
-from backend_api.domain.event_types.entity import EventTypeQueryParams
-from backend_api.domain.event_types.exceptions import EventTypeNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.event_types.schemas import CreateEventTypeInput, UpdateEventTypeInput
+from domain.event_types.entity import EventTypeQueryParams
+from domain.event_types.exceptions import EventTypeNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/event-types", tags=["event-types"])
 

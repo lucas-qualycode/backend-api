@@ -1,8 +1,8 @@
 from typing import Any
 
-from backend_api.domain.users.entity import User
-from backend_api.domain.users.repository import UserRepository
-from backend_api.infrastructure.config import USERS_COLLECTION_NAME
+from domain.users.entity import User
+from domain.users.repository import UserRepository
+from infrastructure.config import USERS_COLLECTION_NAME
 
 
 class FirestoreUserRepository(UserRepository):

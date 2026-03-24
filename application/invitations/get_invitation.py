@@ -1,6 +1,6 @@
-from backend_api.domain.invitations.entity import Invitation
-from backend_api.domain.invitations.exceptions import InvitationNotFoundError
-from backend_api.domain.invitations.repository import InvitationRepository
+from domain.invitations.entity import Invitation
+from domain.invitations.exceptions import InvitationNotFoundError
+from domain.invitations.repository import InvitationRepository
 
 
 def get_invitation(repo: InvitationRepository, invitation_id: str) -> Invitation:

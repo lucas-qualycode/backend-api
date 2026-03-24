@@ -1,6 +1,6 @@
-from backend_api.domain.event_types.entity import EventType
-from backend_api.domain.event_types.exceptions import EventTypeNotFoundError
-from backend_api.domain.event_types.repository import EventTypeRepository
+from domain.event_types.entity import EventType
+from domain.event_types.exceptions import EventTypeNotFoundError
+from domain.event_types.repository import EventTypeRepository
 
 
 def get_event_type(repo: EventTypeRepository, event_type_id: str) -> EventType:

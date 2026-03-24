@@ -1,5 +1,5 @@
-from backend_api.domain.products.exceptions import ProductNotFoundError
-from backend_api.domain.products.repository import ProductRepository
+from domain.products.exceptions import ProductNotFoundError
+from domain.products.repository import ProductRepository
 
 
 def delete_product(repo: ProductRepository, product_id: str) -> None:

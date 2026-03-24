@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.orders.entity import Order, OrderQueryParams
+from domain.orders.entity import Order, OrderQueryParams
 
 
 class OrderRepository(ABC):

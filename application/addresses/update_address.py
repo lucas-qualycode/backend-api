@@ -1,7 +1,7 @@
-from backend_api.application.addresses.schemas import UpdateAddressInput
-from backend_api.domain.addresses.entity import Address
-from backend_api.domain.addresses.exceptions import AddressNotFoundError
-from backend_api.domain.addresses.repository import AddressRepository
+from application.addresses.schemas import UpdateAddressInput
+from domain.addresses.entity import Address
+from domain.addresses.exceptions import AddressNotFoundError
+from domain.addresses.repository import AddressRepository
 
 
 def update_address(

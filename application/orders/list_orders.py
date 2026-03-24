@@ -1,5 +1,5 @@
-from backend_api.domain.orders.entity import Order, OrderQueryParams
-from backend_api.domain.orders.repository import OrderRepository
+from domain.orders.entity import Order, OrderQueryParams
+from domain.orders.repository import OrderRepository
 
 
 def list_orders(

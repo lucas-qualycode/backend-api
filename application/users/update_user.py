@@ -1,7 +1,7 @@
-from backend_api.application.users.schemas import UpdateUserInput
-from backend_api.domain.users.entity import User, UserPreferences
-from backend_api.domain.users.exceptions import UserNotFoundError
-from backend_api.domain.users.repository import UserRepository
+from application.users.schemas import UpdateUserInput
+from domain.users.entity import User, UserPreferences
+from domain.users.exceptions import UserNotFoundError
+from domain.users.repository import UserRepository
 
 
 def update_user(

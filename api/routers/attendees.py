@@ -1,21 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from backend_api.api.auth import CurrentUser, UserOrGuestListAuth, get_current_user, get_user_or_guest_list
-from backend_api.api.deps import get_attendee_repository, get_event_repository, get_user_product_repository
-from backend_api.application.attendees import (
+from api.auth import CurrentUser, UserOrGuestListAuth, get_current_user, get_user_or_guest_list
+from api.deps import get_attendee_repository, get_event_repository, get_user_product_repository
+from application.attendees import (
     check_in_attendee,
     create_attendee,
     get_attendee,
     list_attendees,
     update_attendee_status,
 )
-from backend_api.application.attendees.check_in_attendee import UserProductNotForEventError, UserProductNotFoundError
-from backend_api.application.attendees.schemas import CreateAttendeeInput
-from backend_api.domain.attendees.entity import AttendeeQueryParams
-from backend_api.domain.attendees.exceptions import AttendeeNotFoundError
-from backend_api.domain.events.exceptions import EventNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.attendees.check_in_attendee import UserProductNotForEventError, UserProductNotFoundError
+from application.attendees.schemas import CreateAttendeeInput
+from domain.attendees.entity import AttendeeQueryParams
+from domain.attendees.exceptions import AttendeeNotFoundError
+from domain.events.exceptions import EventNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/events", tags=["attendees"])
 

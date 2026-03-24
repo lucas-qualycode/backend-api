@@ -1,8 +1,8 @@
 import uuid
 
-from backend_api.application.invitations.schemas import CreateInvitationInput
-from backend_api.domain.invitations.entity import Invitation
-from backend_api.domain.invitations.repository import InvitationRepository
+from application.invitations.schemas import CreateInvitationInput
+from domain.invitations.entity import Invitation
+from domain.invitations.repository import InvitationRepository
 
 
 def create_invitation(

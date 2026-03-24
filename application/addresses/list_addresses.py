@@ -1,5 +1,5 @@
-from backend_api.domain.addresses.entity import Address, AddressQueryParams
-from backend_api.domain.addresses.repository import AddressRepository
+from domain.addresses.entity import Address, AddressQueryParams
+from domain.addresses.repository import AddressRepository
 
 
 def list_addresses(

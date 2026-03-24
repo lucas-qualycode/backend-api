@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.event_types.entity import EventType, EventTypeQueryParams
+from domain.event_types.entity import EventType, EventTypeQueryParams
 
 
 class EventTypeRepository(ABC):

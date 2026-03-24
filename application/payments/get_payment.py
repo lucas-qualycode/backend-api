@@ -1,6 +1,6 @@
-from backend_api.domain.payments.entity import Payment
-from backend_api.domain.payments.exceptions import PaymentNotFoundError
-from backend_api.domain.payments.repository import PaymentRepository
+from domain.payments.entity import Payment
+from domain.payments.exceptions import PaymentNotFoundError
+from domain.payments.repository import PaymentRepository
 
 
 def get_payment(repo: PaymentRepository, payment_id: str) -> Payment:

@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.products.entity import Product, ProductQueryParams
-from backend_api.domain.products.repository import ProductRepository
-from backend_api.infrastructure.config import PRODUCTS_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters
+from domain.products.entity import Product, ProductQueryParams
+from domain.products.repository import ProductRepository
+from infrastructure.config import PRODUCTS_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters
 
 
 class FirestoreProductRepository(ProductRepository):

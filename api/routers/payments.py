@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.auth import CurrentUser, get_current_user
-from backend_api.api.deps import get_payment_repository
-from backend_api.application.payments import (
+from api.auth import CurrentUser, get_current_user
+from api.deps import get_payment_repository
+from application.payments import (
     create_payment,
     get_payment,
     list_payments,
     update_payment_status,
 )
-from backend_api.application.payments.schemas import CreatePaymentInput, UpdatePaymentStatusInput
-from backend_api.domain.payments.entity import PaymentQueryParams
-from backend_api.domain.payments.exceptions import PaymentNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.payments.schemas import CreatePaymentInput, UpdatePaymentStatusInput
+from domain.payments.entity import PaymentQueryParams
+from domain.payments.exceptions import PaymentNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 

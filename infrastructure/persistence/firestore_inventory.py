@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.inventory.entity import InventoryItem
-from backend_api.domain.inventory.repository import InventoryRepository
-from backend_api.infrastructure.config import INVENTORY_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from domain.inventory.entity import InventoryItem
+from domain.inventory.repository import InventoryRepository
+from infrastructure.config import INVENTORY_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import get_timestamp
 
 
 class FirestoreInventoryRepository(InventoryRepository):

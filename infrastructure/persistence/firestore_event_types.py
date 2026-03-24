@@ -1,8 +1,8 @@
 from typing import Any
-from backend_api.domain.event_types.entity import EventType, EventTypeQueryParams
-from backend_api.domain.event_types.repository import EventTypeRepository
-from backend_api.infrastructure.config import EVENT_TYPES_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters, get_timestamp
+from domain.event_types.entity import EventType, EventTypeQueryParams
+from domain.event_types.repository import EventTypeRepository
+from infrastructure.config import EVENT_TYPES_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters, get_timestamp
 
 class FirestoreEventTypeRepository(EventTypeRepository):
     def __init__(self, db: Any, collection_name: str = EVENT_TYPES_COLLECTION_NAME) -> None:

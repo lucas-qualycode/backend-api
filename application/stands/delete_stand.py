@@ -1,6 +1,6 @@
-from backend_api.domain.stands.entity import Stand
-from backend_api.domain.stands.exceptions import StandNotFoundError
-from backend_api.domain.stands.repository import StandRepository
+from domain.stands.entity import Stand
+from domain.stands.exceptions import StandNotFoundError
+from domain.stands.repository import StandRepository
 
 
 def delete_stand(repo: StandRepository, stand_id: str, event_id: str, last_updated_by: str) -> Stand:

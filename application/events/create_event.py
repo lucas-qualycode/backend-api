@@ -1,9 +1,9 @@
 import uuid
 
-from backend_api.application.events.schemas import CreateEventInput
-from backend_api.domain.events.entity import Event
-from backend_api.domain.events.repository import EventRepository
-from backend_api.utils.validators import validate_name, validate_url
+from application.events.schemas import CreateEventInput
+from domain.events.entity import Event
+from domain.events.repository import EventRepository
+from utils.validators import validate_name, validate_url
 
 
 def create_event(

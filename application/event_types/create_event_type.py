@@ -1,8 +1,8 @@
 import uuid
 
-from backend_api.domain.event_types.entity import EventType
-from backend_api.domain.event_types.repository import EventTypeRepository
-from backend_api.application.event_types.schemas import CreateEventTypeInput
+from domain.event_types.entity import EventType
+from domain.event_types.repository import EventTypeRepository
+from application.event_types.schemas import CreateEventTypeInput
 
 
 def create_event_type(

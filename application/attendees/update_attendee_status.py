@@ -1,6 +1,6 @@
-from backend_api.domain.attendees.entity import Attendee
-from backend_api.domain.attendees.exceptions import AttendeeNotFoundError
-from backend_api.domain.attendees.repository import AttendeeRepository
+from domain.attendees.entity import Attendee
+from domain.attendees.exceptions import AttendeeNotFoundError
+from domain.attendees.repository import AttendeeRepository
 
 
 def update_attendee_status(

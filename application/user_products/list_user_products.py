@@ -1,5 +1,5 @@
-from backend_api.domain.user_products.entity import UserProduct, UserProductQueryParams
-from backend_api.domain.user_products.repository import UserProductRepository
+from domain.user_products.entity import UserProduct, UserProductQueryParams
+from domain.user_products.repository import UserProductRepository
 
 
 def list_user_products(

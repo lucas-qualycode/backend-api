@@ -1,8 +1,8 @@
 import uuid
 
-from backend_api.application.orders.schemas import CreateOrderInput
-from backend_api.domain.orders.entity import Order, OrderItem
-from backend_api.domain.orders.repository import OrderRepository
+from application.orders.schemas import CreateOrderInput
+from domain.orders.entity import Order, OrderItem
+from domain.orders.repository import OrderRepository
 
 
 def create_order(

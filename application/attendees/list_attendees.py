@@ -1,5 +1,5 @@
-from backend_api.domain.attendees.entity import Attendee, AttendeeQueryParams
-from backend_api.domain.attendees.repository import AttendeeRepository
+from domain.attendees.entity import Attendee, AttendeeQueryParams
+from domain.attendees.repository import AttendeeRepository
 
 
 def list_attendees(

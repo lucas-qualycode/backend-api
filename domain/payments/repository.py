@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.payments.entity import Payment, PaymentQueryParams
+from domain.payments.entity import Payment, PaymentQueryParams
 
 
 class PaymentRepository(ABC):

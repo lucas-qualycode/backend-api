@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.payments.entity import Payment, PaymentQueryParams
-from backend_api.domain.payments.repository import PaymentRepository
-from backend_api.infrastructure.config import PAYMENTS_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters, get_timestamp
+from domain.payments.entity import Payment, PaymentQueryParams
+from domain.payments.repository import PaymentRepository
+from infrastructure.config import PAYMENTS_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters, get_timestamp
 
 
 class FirestorePaymentRepository(PaymentRepository):

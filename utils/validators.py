@@ -1,5 +1,5 @@
 import re
-from backend_api.utils.errors import ValidationError
+from utils.errors import ValidationError
 
 NAME_MAX_LENGTH = 256
 URL_REGEX = re.compile(r"^https?://[^\s]+$", re.IGNORECASE)

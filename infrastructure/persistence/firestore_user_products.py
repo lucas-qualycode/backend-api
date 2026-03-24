@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.user_products.entity import UserProduct, UserProductQueryParams
-from backend_api.domain.user_products.repository import UserProductRepository
-from backend_api.infrastructure.config import USER_PRODUCTS_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters, get_timestamp
+from domain.user_products.entity import UserProduct, UserProductQueryParams
+from domain.user_products.repository import UserProductRepository
+from infrastructure.config import USER_PRODUCTS_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters, get_timestamp
 
 
 class FirestoreUserProductRepository(UserProductRepository):

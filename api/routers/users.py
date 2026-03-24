@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.auth import CurrentUser, get_current_user
-from backend_api.api.deps import get_user_repository
-from backend_api.application.users import create_user, get_user, update_user
-from backend_api.application.users.schemas import CreateUserInput, UpdateUserInput
-from backend_api.domain.users.exceptions import UserNotFoundError
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from api.auth import CurrentUser, get_current_user
+from api.deps import get_user_repository
+from application.users import create_user, get_user, update_user
+from application.users.schemas import CreateUserInput, UpdateUserInput
+from domain.users.exceptions import UserNotFoundError
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/users", tags=["users"])
 

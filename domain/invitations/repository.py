@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.invitations.entity import Invitation, InvitationQueryParams
+from domain.invitations.entity import Invitation, InvitationQueryParams
 
 
 class InvitationRepository(ABC):

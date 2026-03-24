@@ -1,8 +1,8 @@
 import uuid
 
-from backend_api.application.addresses.schemas import CreateAddressInput
-from backend_api.domain.addresses.entity import Address
-from backend_api.domain.addresses.repository import AddressRepository
+from application.addresses.schemas import CreateAddressInput
+from domain.addresses.entity import Address
+from domain.addresses.repository import AddressRepository
 
 
 def create_address(

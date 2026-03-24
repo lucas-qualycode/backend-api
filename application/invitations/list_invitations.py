@@ -1,5 +1,5 @@
-from backend_api.domain.invitations.entity import Invitation, InvitationQueryParams
-from backend_api.domain.invitations.repository import InvitationRepository
+from domain.invitations.entity import Invitation, InvitationQueryParams
+from domain.invitations.repository import InvitationRepository
 
 
 def list_invitations(

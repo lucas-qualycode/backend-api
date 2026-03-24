@@ -1,9 +1,9 @@
 from typing import Any
 
-from backend_api.domain.orders.entity import Order, OrderQueryParams
-from backend_api.domain.orders.repository import OrderRepository
-from backend_api.infrastructure.config import ORDERS_COLLECTION_NAME
-from backend_api.infrastructure.persistence.firestore_common import apply_filters, get_timestamp
+from domain.orders.entity import Order, OrderQueryParams
+from domain.orders.repository import OrderRepository
+from infrastructure.config import ORDERS_COLLECTION_NAME
+from infrastructure.persistence.firestore_common import apply_filters, get_timestamp
 
 
 class FirestoreOrderRepository(OrderRepository):

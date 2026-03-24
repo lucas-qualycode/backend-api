@@ -1,5 +1,5 @@
-from backend_api.domain.schedules.exceptions import ScheduleNotFoundError
-from backend_api.domain.schedules.repository import ScheduleRepository
+from domain.schedules.exceptions import ScheduleNotFoundError
+from domain.schedules.repository import ScheduleRepository
 
 
 def delete_schedule(repo: ScheduleRepository, schedule_id: str) -> None:

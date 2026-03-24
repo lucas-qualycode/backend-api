@@ -1,3 +1,3 @@
-from backend_api.domain.user_products.entity import UserProduct, UserProductQueryParams
-from backend_api.domain.user_products.exceptions import UserProductNotFoundError
-from backend_api.domain.user_products.repository import UserProductRepository
+from domain.user_products.entity import UserProduct, UserProductQueryParams
+from domain.user_products.exceptions import UserProductNotFoundError
+from domain.user_products.repository import UserProductRepository

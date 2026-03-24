@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from backend_api.api.auth import CurrentUser, RequireOrganizer, UserOrGuestListAuth, get_current_user, get_user_or_guest_list
-from backend_api.api.deps import get_event_repository, get_user_product_repository
-from backend_api.application.events import (
+from api.auth import CurrentUser, RequireOrganizer, UserOrGuestListAuth, get_current_user, get_user_or_guest_list
+from api.deps import get_event_repository, get_user_product_repository
+from application.events import (
     create_event,
     delete_event,
     generate_guest_list_token,
@@ -10,12 +10,12 @@ from backend_api.application.events import (
     list_events,
     update_event,
 )
-from backend_api.application.events.schemas import CreateEventInput, UpdateEventInput
-from backend_api.application.user_products.list_user_products import list_user_products
-from backend_api.domain.events.entity import EventQueryParams
-from backend_api.domain.events.exceptions import EventNotFoundError
-from backend_api.domain.user_products.entity import UserProductQueryParams
-from backend_api.infrastructure.persistence.firestore_common import get_timestamp
+from application.events.schemas import CreateEventInput, UpdateEventInput
+from application.user_products.list_user_products import list_user_products
+from domain.events.entity import EventQueryParams
+from domain.events.exceptions import EventNotFoundError
+from domain.user_products.entity import UserProductQueryParams
+from infrastructure.persistence.firestore_common import get_timestamp
 
 router = APIRouter(prefix="/events", tags=["events"])
 

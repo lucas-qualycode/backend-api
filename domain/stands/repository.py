@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from backend_api.domain.stands.entity import Stand, StandQueryParams
+from domain.stands.entity import Stand, StandQueryParams
 
 
 class StandRepository(ABC):

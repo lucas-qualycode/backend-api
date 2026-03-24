@@ -1,7 +1,7 @@
-from backend_api.application.stands.schemas import UpdateStandInput
-from backend_api.domain.stands.entity import Stand
-from backend_api.domain.stands.exceptions import StandNotFoundError
-from backend_api.domain.stands.repository import StandRepository
+from application.stands.schemas import UpdateStandInput
+from domain.stands.entity import Stand
+from domain.stands.exceptions import StandNotFoundError
+from domain.stands.repository import StandRepository
 
 
 def update_stand(

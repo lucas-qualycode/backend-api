@@ -1,6 +1,6 @@
-from backend_api.domain.orders.entity import Order
-from backend_api.domain.orders.exceptions import OrderNotFoundError
-from backend_api.domain.orders.repository import OrderRepository
+from domain.orders.entity import Order
+from domain.orders.exceptions import OrderNotFoundError
+from domain.orders.repository import OrderRepository
 
 
 def update_order_status(

@@ -8,7 +8,7 @@ This document is the complete reference for the **backend_api** repo: layout, co
 
 - **Stack**: FastAPI, Firestore (Firebase), Firebase Auth. Python **3.12+** (`pyproject.toml`). Runs as HTTP API (e.g. via Mangum on Firebase Functions).
 - **Role**: Event/social API: events, tickets, stands, schedules, invitations, attendees, user products, orders, payments, users, addresses.
-- **Entry**: `main.py` wires the FastAPI app for Firebase; `app.py` defines the app and routers. Use `app` from `backend_api.app` for local runs or tests.
+- **Entry**: `main.py` wires the FastAPI app for Firebase; `app.py` defines the app and routers. Use `app` from module `app` (e.g. `uvicorn app:app`) with `PYTHONPATH` set to this directory for local runs or tests.
 - **Health**: `GET /health` returns `{"status": "ok", "timestamp": "<ISO UTC>"}`. No auth.
 
 ---
@@ -46,7 +46,7 @@ Routers are thin (parse → call use case → return JSON). Business logic lives
 | **firebase-admin** | Firebase Auth (`verify_id_token`), Firestore client (via project init). |
 | **firebase-functions** | Deployment: HTTP function (`https_fn.on_request`), Firestore trigger (`on_document_written`). |
 | **Mangum** | Adapter: AWS Lambda / API Gateway event → ASGI → FastAPI. Used in `main.py` to run the app in Firebase. |
-| **uvicorn** | ASGI server for local development (`uvicorn backend_api.app:app`). |
+| **uvicorn** | ASGI server for local development (`cd` into this directory, then `uvicorn app:app`; or `PYTHONPATH=<this_dir> uvicorn app:app`). |
 
 Standard library usage: `hmac` (constant-time token compare for guest list), `secrets` (guest list token generation), `uuid` (new entity IDs), `datetime` (timestamps), `logging`.
 
@@ -70,6 +70,7 @@ backend_api/
 ├── utils/                  # errors (ValidationError, NotFoundError), validators (validate_name, validate_url, NAME_MAX_LENGTH, URL_REGEX)
 ├── app.py                  # FastAPI app, router includes, exception handlers
 ├── main.py                 # Firebase entry, Mangum handler
+├── DEPLOY.md               # Firebase Functions deploy steps and frontend env
 └── cursor.md               # This file
 ```
 
@@ -234,7 +235,8 @@ Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, l
 ## Configuration and run
 
 - **Firestore**: Collection names in `infrastructure/config.py`. Client from `infrastructure.firebase.get_firestore_client()`. Firebase Admin is initialized in `main.py` when not already initialized.
-- **Local**: From repo root, `PYTHONPATH=. uvicorn backend_api.app:app --reload` (or set `PYTHONPATH`). For Firebase emulator, use the entry point that mounts `main.api`.
+- **Local**: From this directory, `PYTHONPATH=. uvicorn app:app --reload`. For Firebase emulator, use `make run` in this folder (imports/exports `firestore-snapshot`) or the entry point that mounts `main.api`. Imports use a flat layout (`application`, `domain`, `api`, …) so Cloud Functions deploy matches the filesystem.
+- **Production deploy**: Firebase Cloud Functions from this directory: `make deploy` or `firebase deploy --only functions`. Requires Blaze and Firebase CLI; see [`DEPLOY.md`](DEPLOY.md). After deploy, set `VITE_API_URL` in react-frontend to the Functions URL for `api`.
 - **Business rules**: Validations, status transitions, and domain rules are in `.cursor/rules/backend-business-rules.mdc` at the repo root; keep code and that doc aligned. Event delete is soft-delete only; there is no `validate-deletion` endpoint.
 
 ---

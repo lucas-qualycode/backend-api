@@ -1,10 +1,10 @@
 import uuid
 
-from backend_api.domain.attendees.entity import Attendee, AttendeeQueryParams, AttendeeStatus
-from backend_api.domain.attendees.repository import AttendeeRepository
-from backend_api.domain.events.exceptions import EventNotFoundError
-from backend_api.domain.events.repository import EventRepository
-from backend_api.domain.user_products.repository import UserProductRepository
+from domain.attendees.entity import Attendee, AttendeeQueryParams, AttendeeStatus
+from domain.attendees.repository import AttendeeRepository
+from domain.events.exceptions import EventNotFoundError
+from domain.events.repository import EventRepository
+from domain.user_products.repository import UserProductRepository
 
 
 class UserProductNotFoundError(Exception):

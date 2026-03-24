@@ -1,9 +1,9 @@
 import uuid
 
-from backend_api.application.schedules.schemas import UpdateScheduleInput
-from backend_api.domain.schedules.entity import Schedule, ScheduleExclusion
-from backend_api.domain.schedules.exceptions import ScheduleNotFoundError
-from backend_api.domain.schedules.repository import ScheduleRepository
+from application.schedules.schemas import UpdateScheduleInput
+from domain.schedules.entity import Schedule, ScheduleExclusion
+from domain.schedules.exceptions import ScheduleNotFoundError
+from domain.schedules.repository import ScheduleRepository
 
 
 def update_schedule(

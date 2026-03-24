@@ -4,15 +4,15 @@ from firebase_functions.core import Change
 from firebase_functions.firestore_fn import Event, on_document_written
 from google.cloud.firestore_v1 import DocumentSnapshot
 
-from backend_api.application.payments.process_payment_approval import process_payment_approval
-from backend_api.infrastructure.firebase import get_firestore_client
-from backend_api.infrastructure.persistence.firestore_invitations import FirestoreInvitationRepository
-from backend_api.infrastructure.persistence.firestore_orders import FirestoreOrderRepository
-from backend_api.infrastructure.persistence.firestore_payments import FirestorePaymentRepository
-from backend_api.infrastructure.persistence.firestore_products import FirestoreProductRepository
-from backend_api.infrastructure.persistence.firestore_user_products import FirestoreUserProductRepository
+from application.payments.process_payment_approval import process_payment_approval
+from infrastructure.firebase import get_firestore_client
+from infrastructure.persistence.firestore_invitations import FirestoreInvitationRepository
+from infrastructure.persistence.firestore_orders import FirestoreOrderRepository
+from infrastructure.persistence.firestore_payments import FirestorePaymentRepository
+from infrastructure.persistence.firestore_products import FirestoreProductRepository
+from infrastructure.persistence.firestore_user_products import FirestoreUserProductRepository
 
-log = logging.getLogger("backend_api.triggers.payment_approval")
+log = logging.getLogger("triggers.payment_approval")
 
 
 @on_document_written(document="payments/{paymentId}")
