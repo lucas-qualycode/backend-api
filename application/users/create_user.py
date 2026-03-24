@@ -8,17 +8,12 @@ def create_user(
     data: CreateUserInput,
     now: str,
 ) -> User:
-    prefs = None
     if data.preferences is not None:
-        prefs = UserPreferences(
-            notifications=data.preferences.notifications,
-            language=data.preferences.language,
-            timezone=data.preferences.timezone,
-            themeMode=data.preferences.themeMode,
-            density=data.preferences.density,
-            fontSize=data.preferences.fontSize,
-            reducedMotion=data.preferences.reducedMotion,
-        )
+        base = UserPreferences().model_dump()
+        base.update(data.preferences.model_dump(exclude_unset=True))
+        prefs = UserPreferences(**base)
+    else:
+        prefs = UserPreferences()
     user = User(
         id=data.id,
         email=data.email,
@@ -28,6 +23,6 @@ def create_user(
         createdAt=now,
         updatedAt=now,
         phoneNumber=data.phoneNumber,
-        preferences=prefs or UserPreferences(),
+        preferences=prefs,
     )
     return repo.create(user)

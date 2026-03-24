@@ -6,11 +6,12 @@ ThemeMode = Literal["system", "light", "dark"]
 Density = Literal["default", "compact", "comfortable"]
 FontSizePref = Literal["standard", "large"]
 ReducedMotion = Literal["system", "reduce", "full"]
+LanguageCode = Literal["en", "pt-BR"]
 
 
 class UserPreferences(BaseModel):
     notifications: bool = True
-    language: str = "pt-BR"
+    language: LanguageCode = "pt-BR"
     timezone: str = "UTC-3"
     themeMode: ThemeMode = "system"
     density: Density = "default"
