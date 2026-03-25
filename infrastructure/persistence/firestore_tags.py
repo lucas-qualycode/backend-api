@@ -3,6 +3,8 @@ from typing import Any
 from domain.tags.entity import Tag, TagQueryParams
 from domain.tags.repository import TagRepository
 from infrastructure.config import TAGS_COLLECTION_NAME
+from google.cloud.firestore_v1.base_query import FieldFilter
+
 from infrastructure.persistence.firestore_common import apply_filters, get_timestamp
 
 
@@ -24,7 +26,7 @@ class FirestoreTagRepository(TagRepository):
     def list(self, query_params: TagQueryParams) -> list[Tag]:
         query = self._coll
         if query_params.roots_only:
-            query = query.where("parent_tag_id", "==", None)
+            query = query.where(filter=FieldFilter("parent_tag_id", "==", None))
             spec = [t for t in TagQueryParams.FILTER_SPEC if t[0] != "parent_tag_id"]
             query = apply_filters(query, query_params, spec)
         else:

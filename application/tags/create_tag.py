@@ -3,6 +3,7 @@ import uuid
 from application.tags.schemas import CreateTagInput
 from application.tags.validation import (
     assert_applies_to_compatible_with_parent,
+    assert_child_name_differs_from_parent,
     assert_sibling_name_unique,
 )
 from domain.tags.entity import Tag
@@ -28,6 +29,7 @@ def create_tag(
         if parent is None or parent.deleted or not parent.active:
             raise ValidationError("Invalid parent tag")
         assert_applies_to_compatible_with_parent(data.applies_to, parent)
+        assert_child_name_differs_from_parent(data.name, parent)
     assert_sibling_name_unique(repo, data.name, data.parent_tag_id, None)
     depth = parent.depth + 1 if parent else 0
     tag = Tag(

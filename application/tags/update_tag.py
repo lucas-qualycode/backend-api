@@ -1,6 +1,7 @@
 from application.tags.schemas import UpdateTagInput
 from application.tags.validation import (
     assert_applies_to_compatible_with_parent,
+    assert_child_name_differs_from_parent,
     assert_sibling_name_unique,
     refresh_descendant_depths,
     would_create_cycle,
@@ -39,6 +40,7 @@ def update_tag(
         if parent is None or parent.deleted:
             raise ValidationError("Invalid parent tag")
         assert_applies_to_compatible_with_parent(merged_applies, parent)
+        assert_child_name_differs_from_parent(merged_name, parent)
     if "parent_tag_id" in updates:
         if would_create_cycle(repo, tag_id, merged_parent_id):
             raise ValidationError("Invalid parent tag: would create a cycle")

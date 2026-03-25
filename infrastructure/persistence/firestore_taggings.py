@@ -1,5 +1,7 @@
 from typing import Any
 
+from google.cloud.firestore_v1.base_query import FieldFilter
+
 from domain.taggings.entity import Tagging
 from domain.taggings.repository import TaggingRepository
 from infrastructure.config import TAGGINGS_COLLECTION_NAME
@@ -20,9 +22,8 @@ class FirestoreTaggingRepository(TaggingRepository):
         return tagging
 
     def list_by_entity(self, entity_type: str, entity_id: str) -> list[Tagging]:
-        q = (
-            self._coll.where("entity_type", "==", entity_type)
-            .where("entity_id", "==", entity_id)
+        q = self._coll.where(filter=FieldFilter("entity_type", "==", entity_type)).where(
+            filter=FieldFilter("entity_id", "==", entity_id),
         )
         return [Tagging.model_validate(d.to_dict()) for d in q.get()]
 
@@ -34,8 +35,8 @@ class FirestoreTaggingRepository(TaggingRepository):
         offset: int | None,
     ) -> list[Tagging]:
         q = (
-            self._coll.where("entity_type", "==", entity_type)
-            .where("tag_id", "==", tag_id)
+            self._coll.where(filter=FieldFilter("entity_type", "==", entity_type))
+            .where(filter=FieldFilter("tag_id", "==", tag_id))
             .order_by("created_at")
         )
         if offset is not None:
@@ -51,8 +52,8 @@ class FirestoreTaggingRepository(TaggingRepository):
         for i in range(0, len(entity_ids), 10):
             chunk = entity_ids[i : i + 10]
             snap = (
-                self._coll.where("entity_type", "==", entity_type)
-                .where("entity_id", "in", chunk)
+                self._coll.where(filter=FieldFilter("entity_type", "==", entity_type))
+                .where(filter=FieldFilter("entity_id", "in", chunk))
                 .get()
             )
             out.extend(Tagging.model_validate(d.to_dict()) for d in snap)
@@ -61,7 +62,11 @@ class FirestoreTaggingRepository(TaggingRepository):
     def delete_all_for_entity(self, entity_type: str, entity_id: str) -> None:
         batch = self._db.batch()
         n = 0
-        for doc in self._coll.where("entity_type", "==", entity_type).where("entity_id", "==", entity_id).stream():
+        for doc in (
+            self._coll.where(filter=FieldFilter("entity_type", "==", entity_type))
+            .where(filter=FieldFilter("entity_id", "==", entity_id))
+            .stream()
+        ):
             batch.delete(doc.reference)
             n += 1
             if n >= 450:
@@ -81,7 +86,11 @@ class FirestoreTaggingRepository(TaggingRepository):
     ) -> None:
         batch = self._db.batch()
         n = 0
-        for doc in self._coll.where("entity_type", "==", entity_type).where("entity_id", "==", entity_id).stream():
+        for doc in (
+            self._coll.where(filter=FieldFilter("entity_type", "==", entity_type))
+            .where(filter=FieldFilter("entity_id", "==", entity_id))
+            .stream()
+        ):
             batch.delete(doc.reference)
             n += 1
             if n >= 450:

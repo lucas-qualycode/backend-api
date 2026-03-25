@@ -3,6 +3,13 @@ from domain.tags.repository import TagRepository
 from utils.errors import ValidationError
 
 
+def assert_child_name_differs_from_parent(name: str, parent: Tag | None) -> None:
+    if parent is None:
+        return
+    if name.strip().lower() == parent.name.strip().lower():
+        raise ValidationError("Tag name must not be the same as the parent tag name")
+
+
 def assert_sibling_name_unique(
     tag_repo: TagRepository,
     name: str,
