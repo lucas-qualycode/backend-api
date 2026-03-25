@@ -120,12 +120,12 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | POST | `/events/{event_id}/stands` | organizer |
 | PUT/PATCH | `/events/{event_id}/stands/{id}` | organizer |
 | DELETE | `/events/{event_id}/stands/{id}` | organizer |
-| **Event types** (`prefix=/event-types`) | | |
-| GET | `/event-types` | none |
-| GET | `/event-types/{id}` | none |
-| POST | `/event-types` | organizer |
-| PUT/PATCH | `/event-types/{id}` | organizer |
-| DELETE | `/event-types/{id}` | organizer |
+| **Tags** (`prefix=/tags`) | | |
+| GET | `/tags` | none (query: active, deleted, parent_tag_id, applies_to, roots_only, limit, offset) |
+| GET | `/tags/{id}` | none |
+| POST | `/tags` | organizer |
+| PUT/PATCH | `/tags/{id}` | organizer |
+| DELETE | `/tags/{id}` | organizer |
 | **Schedules** (`prefix=/schedules`) | | |
 | GET | `/schedules` | none (query: event_id, status, limit, offset) |
 | GET | `/schedules/{id}` | none |
@@ -133,13 +133,13 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | PUT/PATCH | `/schedules/{id}` | organizer |
 | DELETE | `/schedules/{id}` | organizer |
 | **Invitations** (`prefix=/invitations`) | | |
-| GET | `/invitations` | user |
+| GET | `/invitations` | user (query: event_id, status, tag_id, limit, offset) |
 | GET | `/invitations/{id}` | optional user (public or authenticated) |
 | POST | `/invitations` | organizer |
 | PUT/PATCH | `/invitations/{id}` | organizer |
 | POST | `/invitations/{id}/status` | organizer |
 | **Products** (`prefix=/products`) | | |
-| GET | `/products` | none (query: name, parent_id, active, deleted, limit, offset) |
+| GET | `/products` | none (query: name, parent_id, active, deleted, tag_id, limit, offset) |
 | GET | `/products/{id}` | none |
 | POST | `/products` | organizer |
 | PUT/PATCH | `/products/{id}` | organizer |
@@ -173,7 +173,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | PUT/PATCH | `/payments/{id}` | user |
 | PATCH | `/payments/{id}/status` | user |
 
-**Public (no auth)**: `/health`, `GET /events`, `GET /events/{id}`, `GET /event-types`, `GET /event-types/{id}`, `GET /schedules`, `GET /schedules/{id}`, `GET /products`, `GET /products/{id}`. **Optional auth**: `GET /invitations/{id}`.
+**Public (no auth)**: `/health`, `GET /events`, `GET /events/{id}`, `GET /tags`, `GET /tags/{id}`, `GET /schedules`, `GET /schedules/{id}`, `GET /products`, `GET /products/{id}`. **Optional auth**: `GET /invitations/{id}`.
 
 ### Users (`/users`)
 
@@ -185,13 +185,15 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 
 ## Firestore collections
 
-Defined in `infrastructure/config.py`. Top-level: `events`, `event_types`, `products`, `userProducts`, `inventory`, `users`, `addresses`, `orders`, `payments`. Subcollections: under `events/{eventId}` → `stands`, `schedules`, `invitations`, `attendees`. Names: `EVENTS_COLLECTION_NAME` = `"events"`, `EVENT_TYPES_COLLECTION_NAME` = `"event_types"`, `STANDS_COLLECTION_NAME` = `"stands"`, `SCHEDULES_COLLECTION_NAME` = `"schedules"`, `INVITATIONS_COLLECTION_NAME` = `"invitations"`, `ATTENDEES_COLLECTION_NAME` = `"attendees"`, `PRODUCTS_COLLECTION_NAME` = `"products"`, `USER_PRODUCTS_COLLECTION_NAME` = `"userProducts"`, `INVENTORY_COLLECTION_NAME` = `"inventory"`, `USERS_COLLECTION_NAME` = `"users"`, `ADDRESSES_COLLECTION_NAME` = `"addresses"`, `ORDERS_COLLECTION_NAME` = `"orders"`, `PAYMENTS_COLLECTION_NAME` = `"payments"`.
+Defined in `infrastructure/config.py`. Top-level: `events`, `tags`, `taggings`, `products`, `userProducts`, `inventory`, `users`, `addresses`, `orders`, `payments`. Subcollections: under `events/{eventId}` → `stands`, `schedules`, `invitations`, `attendees`. Names: `EVENTS_COLLECTION_NAME` = `"events"`, `TAGS_COLLECTION_NAME` = `"tags"`, `TAGGINGS_COLLECTION_NAME` = `"taggings"`, `STANDS_COLLECTION_NAME` = `"stands"`, `SCHEDULES_COLLECTION_NAME` = `"schedules"`, `INVITATIONS_COLLECTION_NAME` = `"invitations"`, `ATTENDEES_COLLECTION_NAME` = `"attendees"`, `PRODUCTS_COLLECTION_NAME` = `"products"`, `USER_PRODUCTS_COLLECTION_NAME` = `"userProducts"`, `INVENTORY_COLLECTION_NAME` = `"inventory"`, `USERS_COLLECTION_NAME` = `"users"`, `ADDRESSES_COLLECTION_NAME` = `"addresses"`, `ORDERS_COLLECTION_NAME` = `"orders"`, `PAYMENTS_COLLECTION_NAME` = `"payments"`.
+
+Composite index definitions for `tags` / `taggings` live in [`firestore.indexes.json`](firestore.indexes.json) in this directory (and in [`backend/firestore.indexes.json`](../backend/firestore.indexes.json) for the wider Firebase project).
 
 ---
 
 ## Exception handling (app.py)
 
-- **404**: `NotFoundError` (content `{"error": exc.message}`); and each domain not-found: `EventNotFoundError`, `EventTypeNotFoundError`, `StandNotFoundError`, `ScheduleNotFoundError`, `InvitationNotFoundError`, `AttendeeNotFoundError`, `ProductNotFoundError`, `UserProductNotFoundError`, `UserNotFoundError`, `AddressNotFoundError`, `OrderNotFoundError`, `PaymentNotFoundError` (content `{"error": str(exc)}`).
+- **404**: `NotFoundError` (content `{"error": exc.message}`); and each domain not-found: `EventNotFoundError`, `TagNotFoundError`, `StandNotFoundError`, `ScheduleNotFoundError`, `InvitationNotFoundError`, `AttendeeNotFoundError`, `ProductNotFoundError`, `UserProductNotFoundError`, `UserNotFoundError`, `AddressNotFoundError`, `OrderNotFoundError`, `PaymentNotFoundError` (content `{"error": str(exc)}`).
 - **400**: `ValidationError` → `{"error": exc.message}`; Pydantic validation → `{"error": exc.errors()}`.
 - **500**: Any other exception → `{"error": "Internal server error"}` (and logged).
 
@@ -228,7 +230,7 @@ Success responses: single entity or list of entities as JSON (`model_dump(mode="
 
 ## Domain entities (reference)
 
-Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, location, active, is_paid, is_online, type_ids, imageURL, deleted, created_at, updated_at, created_by, last_updated_by, guest_list_token); **Attendee** (id, event_id, user_id, user_product_id, invitation_id, status, check_in_time, created_at, updated_at, metadata); **UserProduct** (id, parent_id, product_id, user_id, status, quantity, price, currency, purchase_date, valid_from, valid_until, …); **Product**, **Order**, **Payment**, **Invitation**, **Stand**, **Schedule**, **EventType**, **User** (includes **UserPreferences** with appearance fields as above), **Address**. Query params live in the same entity file with a `FILTER_SPEC` class attribute for Firestore filters. Exceptions: `domain/<agg>/exceptions.py` (e.g. `EventNotFoundError(event_id)`).
+Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, location, active, is_paid, is_online, imageURL, deleted, created_at, updated_at, created_by, last_updated_by, guest_list_token); tags are attached via **Tagging** rows (`taggings` collection) and returned on event GET/list as embedded `tags`. **Tag** (hierarchical taxonomy: `parent_tag_id`, `applies_to`, `depth`, …); **Tagging** (id, tag_id, entity_type, entity_id, created_by, created_at). **Attendee** (id, event_id, user_id, user_product_id, invitation_id, status, check_in_time, created_at, updated_at, metadata); **UserProduct** (id, parent_id, product_id, user_id, status, quantity, price, currency, purchase_date, valid_from, valid_until, …); **Product**, **Order**, **Payment**, **Invitation**, **Stand**, **Schedule**, **User** (includes **UserPreferences** with appearance fields as above), **Address**. Query params live in the same entity file with a `FILTER_SPEC` class attribute for Firestore filters where applicable. Exceptions: `domain/<agg>/exceptions.py` (e.g. `EventNotFoundError(event_id)`).
 
 ---
 

@@ -32,6 +32,7 @@ class ProductQueryParams(BaseModel):
     deleted: bool | None = None
     limit: int | None = None
     offset: int | None = None
+    tag_id: str | None = None
 
     FILTER_SPEC: ClassVar[list[tuple[str, str, str]]] = [
         ("parent_id", "parent_id", "=="),

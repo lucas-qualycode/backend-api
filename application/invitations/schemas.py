@@ -10,6 +10,7 @@ class CreateInvitationInput(BaseModel):
     destination_type: str
     expires_at: str
     metadata: dict = {}
+    tag_ids: list[str] = []
 
 
 class UpdateInvitationInput(BaseModel):
@@ -21,3 +22,4 @@ class UpdateInvitationInput(BaseModel):
     destination_type: str | None = None
     expires_at: str | None = None
     metadata: dict | None = None
+    tag_ids: list[str] | None = None

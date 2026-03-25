@@ -1,0 +1,31 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "taggings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "entity_type", "order": "ASCENDING" },
+        { "fieldPath": "tag_id", "order": "ASCENDING" },
+        { "fieldPath": "created_at", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "taggings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "entity_type", "order": "ASCENDING" },
+        { "fieldPath": "entity_id", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tags",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "parent_tag_id", "order": "ASCENDING" },
+        { "fieldPath": "deleted", "order": "ASCENDING" },
+        { "fieldPath": "active", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

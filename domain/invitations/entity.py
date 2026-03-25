@@ -25,6 +25,7 @@ class InvitationQueryParams(BaseModel):
     status: str | None = None
     limit: int | None = None
     offset: int | None = None
+    tag_id: str | None = None
 
     FILTER_SPEC: ClassVar[list[tuple[str, str, str]]] = [
         ("event_id", "event_id", "=="),

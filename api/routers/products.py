@@ -1,18 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.auth import CurrentUser, RequireOrganizer, get_current_user
-from api.deps import get_product_repository
+from api.auth import CurrentUser, RequireOrganizer
+from api.deps import get_product_repository, get_tag_repository, get_tagging_repository
 from application.products import (
     create_product,
     delete_product,
     get_product,
-    list_products,
+    list_products_as_dicts,
     update_product,
 )
 from application.products.schemas import CreateProductInput, UpdateProductInput
+from application.taggings import embed_tags_on_product, validate_tag_ids_for_entity
 from domain.products.entity import ProductQueryParams
 from domain.products.exceptions import ProductNotFoundError
+from domain.taggings.entity import TaggingEntityType
 from infrastructure.persistence.firestore_common import get_timestamp
+from utils.errors import ValidationError
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -23,19 +26,35 @@ def list_products_endpoint(
     parent_id: str | None = None,
     active: bool | None = None,
     deleted: bool | None = None,
+    tag_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
     repo=Depends(get_product_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
 ):
-    params = ProductQueryParams(name=name, parent_id=parent_id, active=active, deleted=deleted, limit=limit, offset=offset)
-    items = list_products(repo, params)
-    return [p.model_dump(mode="json") for p in items]
+    params = ProductQueryParams(
+        name=name,
+        parent_id=parent_id,
+        active=active,
+        deleted=deleted,
+        limit=limit,
+        offset=offset,
+        tag_id=tag_id,
+    )
+    return list_products_as_dicts(repo, tagging_repo, tag_repo, params)
 
 
 @router.get("/{id}")
-def get_product_endpoint(id: str, repo=Depends(get_product_repository)):
+def get_product_endpoint(
+    id: str,
+    repo=Depends(get_product_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
+):
     try:
-        return get_product(repo, id).model_dump(mode="json")
+        product = get_product(repo, id)
+        return embed_tags_on_product(product, tagging_repo, tag_repo)
     except ProductNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -45,8 +64,28 @@ def create_product_endpoint(
     data: CreateProductInput,
     current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_product_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
 ):
-    return create_product(repo, data, current_user.uid, get_timestamp()).model_dump(mode="json")
+    try:
+        validate_tag_ids_for_entity(
+            tag_repo,
+            data.tag_ids,
+            TaggingEntityType.PRODUCT,
+            require_at_least_one=False,
+        )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    now = get_timestamp()
+    product = create_product(repo, data, current_user.uid, now)
+    tagging_repo.replace_all_for_entity(
+        TaggingEntityType.PRODUCT,
+        product.id,
+        data.tag_ids,
+        current_user.uid,
+        now,
+    )
+    return embed_tags_on_product(product, tagging_repo, tag_repo)
 
 
 @router.put("/{id}")
@@ -56,16 +95,41 @@ def update_product_endpoint(
     data: UpdateProductInput,
     current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_product_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
 ):
     try:
-        return update_product(repo, id, data, current_user.uid, get_timestamp()).model_dump(mode="json")
+        now = get_timestamp()
+        product = update_product(repo, id, data, current_user.uid, now)
+        if data.tag_ids is not None:
+            try:
+                validate_tag_ids_for_entity(
+                    tag_repo,
+                    data.tag_ids,
+                    TaggingEntityType.PRODUCT,
+                    require_at_least_one=False,
+                )
+            except ValidationError as e:
+                raise HTTPException(status_code=400, detail=e.message)
+            tagging_repo.replace_all_for_entity(
+                TaggingEntityType.PRODUCT,
+                product.id,
+                data.tag_ids,
+                current_user.uid,
+                now,
+            )
+        return embed_tags_on_product(product, tagging_repo, tag_repo)
     except ProductNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.delete("/{id}", status_code=204)
-def delete_product_endpoint(id: str, repo=Depends(get_product_repository)):
+def delete_product_endpoint(
+    id: str,
+    repo=Depends(get_product_repository),
+    tagging_repo=Depends(get_tagging_repository),
+):
     try:
-        delete_product(repo, id)
+        delete_product(repo, tagging_repo, id)
     except ProductNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

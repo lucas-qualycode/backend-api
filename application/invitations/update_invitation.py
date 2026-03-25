@@ -14,5 +14,6 @@ def update_invitation(
     if existing is None:
         raise InvitationNotFoundError(invitation_id)
     updates = data.model_dump(exclude_unset=True)
+    updates.pop("tag_ids", None)
     updated_invitation = existing.model_copy(update={**updates, "updated_at": updated_at})
     return repo.update(invitation_id, updated_invitation)

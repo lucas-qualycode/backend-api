@@ -15,6 +15,7 @@ class CreateProductInput(BaseModel):
     request_additional_info: bool
     active: bool = True
     metadata: dict = {}
+    tag_ids: list[str] = []
 
 
 class UpdateProductInput(BaseModel):
@@ -31,3 +32,4 @@ class UpdateProductInput(BaseModel):
     request_additional_info: bool | None = None
     active: bool | None = None
     metadata: dict | None = None
+    tag_ids: list[str] | None = None

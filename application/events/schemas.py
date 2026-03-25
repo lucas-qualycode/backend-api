@@ -10,7 +10,7 @@ class CreateEventInput(BaseModel):
     active: bool | None = None
     is_paid: bool | None = None
     is_online: bool | None = None
-    type_ids: list[str]
+    tag_ids: list[str]
     imageURL: str | None = None
 
 
@@ -23,5 +23,5 @@ class UpdateEventInput(BaseModel):
     active: bool | None = None
     is_paid: bool | None = None
     is_online: bool | None = None
-    type_ids: list[str] | None = None
+    tag_ids: list[str] | None = None
     imageURL: str | None = None

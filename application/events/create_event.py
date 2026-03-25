@@ -25,7 +25,6 @@ def create_event(
         active=data.active if data.active is not None else True,
         is_paid=data.is_paid if data.is_paid is not None else False,
         is_online=data.is_online if data.is_online is not None else False,
-        type_ids=data.type_ids,
         imageURL=data.imageURL,
         deleted=False,
         created_at=now,

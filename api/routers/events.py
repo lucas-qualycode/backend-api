@@ -1,21 +1,29 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.auth import CurrentUser, RequireOrganizer, UserOrGuestListAuth, get_current_user, get_user_or_guest_list
-from api.deps import get_event_repository, get_user_product_repository
+from api.auth import CurrentUser, RequireOrganizer, UserOrGuestListAuth, get_user_or_guest_list
+from api.deps import (
+    get_event_repository,
+    get_tag_repository,
+    get_tagging_repository,
+    get_user_product_repository,
+)
 from application.events import (
     create_event,
     delete_event,
     generate_guest_list_token,
     get_event,
-    list_events,
+    list_events_as_dicts,
     update_event,
 )
 from application.events.schemas import CreateEventInput, UpdateEventInput
+from application.taggings import embed_tags_on_event, validate_tag_ids_for_entity
 from application.user_products.list_user_products import list_user_products
 from domain.events.entity import EventQueryParams
 from domain.events.exceptions import EventNotFoundError
+from domain.taggings.entity import TaggingEntityType
 from domain.user_products.entity import UserProductQueryParams
 from infrastructure.persistence.firestore_common import get_timestamp
+from utils.errors import ValidationError
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -28,10 +36,12 @@ def list_events_endpoint(
     is_online: bool | None = None,
     deleted: bool | None = None,
     created_by: str | None = None,
-    type_id: str | None = None,
+    tag_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    repo=Depends(get_event_repository),
+    event_repo=Depends(get_event_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
 ):
     params = EventQueryParams(
         name=name,
@@ -40,19 +50,23 @@ def list_events_endpoint(
         is_online=is_online,
         deleted=deleted,
         created_by=created_by,
-        type_id=type_id,
+        tag_id=tag_id,
         limit=limit,
         offset=offset,
     )
-    events = list_events(repo, params)
-    return [e.model_dump(mode="json") for e in events]
+    return list_events_as_dicts(event_repo, tagging_repo, tag_repo, params)
 
 
 @router.get("/{id}")
-def get_event_endpoint(id: str, repo=Depends(get_event_repository)):
+def get_event_endpoint(
+    id: str,
+    event_repo=Depends(get_event_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
+):
     try:
-        event = get_event(repo, id)
-        return event.model_dump(mode="json")
+        event = get_event(event_repo, id)
+        return embed_tags_on_event(event, tagging_repo, tag_repo)
     except EventNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -91,9 +105,28 @@ def create_event_endpoint(
     data: CreateEventInput,
     current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
 ):
-    event = create_event(repo, data, current_user.uid, get_timestamp())
-    return event.model_dump(mode="json")
+    try:
+        validate_tag_ids_for_entity(
+            tag_repo,
+            data.tag_ids,
+            TaggingEntityType.EVENT,
+            require_at_least_one=True,
+        )
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
+    now = get_timestamp()
+    event = create_event(repo, data, current_user.uid, now)
+    tagging_repo.replace_all_for_entity(
+        TaggingEntityType.EVENT,
+        event.id,
+        data.tag_ids,
+        current_user.uid,
+        now,
+    )
+    return embed_tags_on_event(event, tagging_repo, tag_repo)
 
 
 @router.put("/{id}")
@@ -103,10 +136,30 @@ def update_event_endpoint(
     data: UpdateEventInput,
     current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
 ):
     try:
-        event = update_event(repo, id, data, current_user.uid, get_timestamp())
-        return event.model_dump(mode="json")
+        now = get_timestamp()
+        event = update_event(repo, id, data, current_user.uid, now)
+        if data.tag_ids is not None:
+            try:
+                validate_tag_ids_for_entity(
+                    tag_repo,
+                    data.tag_ids,
+                    TaggingEntityType.EVENT,
+                    require_at_least_one=True,
+                )
+            except ValidationError as e:
+                raise HTTPException(status_code=400, detail=e.message)
+            tagging_repo.replace_all_for_entity(
+                TaggingEntityType.EVENT,
+                event.id,
+                data.tag_ids,
+                current_user.uid,
+                now,
+            )
+        return embed_tags_on_event(event, tagging_repo, tag_repo)
     except EventNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -116,9 +169,10 @@ def delete_event_endpoint(
     id: str,
     current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_repository),
+    tagging_repo=Depends(get_tagging_repository),
 ):
     try:
-        event = delete_event(repo, id, current_user.uid)
+        event = delete_event(repo, tagging_repo, id, current_user.uid)
         return event.model_dump(mode="json")
     except EventNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

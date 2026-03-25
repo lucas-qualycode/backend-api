@@ -15,6 +15,7 @@ def update_product(
     if existing is None:
         raise ProductNotFoundError(product_id)
     updates = data.model_dump(exclude_unset=True)
+    updates.pop("tag_ids", None)
     updated_product = existing.model_copy(
         update={**updates, "updated_at": updated_at, "last_updated_by": last_updated_by}
     )

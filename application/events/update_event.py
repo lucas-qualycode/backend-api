@@ -22,6 +22,7 @@ def update_event(
     validate_url(data.imageURL, "imageURL")
     validate_url(data.location_link, "location_link")
     updates = data.model_dump(exclude_unset=True)
+    updates.pop("tag_ids", None)
     updated_event = existing.model_copy(
         update={**updates, "updated_at": updated_at, "last_updated_by": last_updated_by},
     )

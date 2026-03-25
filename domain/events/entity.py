@@ -13,7 +13,6 @@ class Event(BaseModel):
     active: bool
     is_paid: bool
     is_online: bool
-    type_ids: list[str]
     imageURL: str | None = None
     deleted: bool
     created_at: str
@@ -30,7 +29,7 @@ class EventQueryParams(BaseModel):
     is_online: bool | None = None
     deleted: bool | None = None
     created_by: str | None = None
-    type_id: str | None = None
+    tag_id: str | None = None
     limit: int | None = None
     offset: int | None = None
 
@@ -41,5 +40,4 @@ class EventQueryParams(BaseModel):
         ("is_online", "is_online", "=="),
         ("deleted", "deleted", "=="),
         ("created_by", "created_by", "=="),
-        ("type_id", "type_ids", "array_contains"),
     ]

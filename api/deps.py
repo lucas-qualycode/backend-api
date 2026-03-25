@@ -6,7 +6,8 @@ from infrastructure.firebase import get_firestore_client
 from infrastructure.persistence.firestore_addresses import FirestoreAddressRepository
 from infrastructure.persistence.firestore_attendees import FirestoreAttendeeRepository
 from infrastructure.persistence.firestore_events import FirestoreEventRepository
-from infrastructure.persistence.firestore_event_types import FirestoreEventTypeRepository
+from infrastructure.persistence.firestore_taggings import FirestoreTaggingRepository
+from infrastructure.persistence.firestore_tags import FirestoreTagRepository
 from infrastructure.persistence.firestore_invitations import FirestoreInvitationRepository
 from infrastructure.persistence.firestore_orders import FirestoreOrderRepository
 from infrastructure.persistence.firestore_payments import FirestorePaymentRepository
@@ -25,8 +26,12 @@ def get_event_repository(db: Any = Depends(get_db)) -> FirestoreEventRepository:
     return FirestoreEventRepository(db)
 
 
-def get_event_type_repository(db: Any = Depends(get_db)) -> FirestoreEventTypeRepository:
-    return FirestoreEventTypeRepository(db)
+def get_tag_repository(db: Any = Depends(get_db)) -> FirestoreTagRepository:
+    return FirestoreTagRepository(db)
+
+
+def get_tagging_repository(db: Any = Depends(get_db)) -> FirestoreTaggingRepository:
+    return FirestoreTaggingRepository(db)
 
 
 def get_stand_repository(db: Any = Depends(get_db)) -> FirestoreStandRepository:
