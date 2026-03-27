@@ -127,11 +127,11 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | PUT/PATCH | `/tags/{id}` | organizer |
 | DELETE | `/tags/{id}` | organizer |
 | **Schedules** (`prefix=/schedules`) | | |
-| GET | `/schedules` | none (query: event_id, status, limit, offset) |
-| GET | `/schedules/{id}` | none |
-| POST | `/schedules` | organizer |
-| PUT/PATCH | `/schedules/{id}` | organizer |
-| DELETE | `/schedules/{id}` | organizer |
+| GET | `/schedules` | organizer (**required** query `event_id`; caller must **own** the event) |
+| GET | `/schedules/{id}` | organizer (schedule’s event must be **owned** by caller) |
+| POST | `/schedules` | organizer (body `event_id` must be **owned**; `timezone` must be a valid **IANA** id; `status` one of `active` \| `cancelled` \| `completed`; dates `YYYY-MM-DD`, times `HH:mm`) |
+| PUT/PATCH | `/schedules/{id}` | organizer (same ownership and validation rules on provided fields) |
+| DELETE | `/schedules/{id}` | organizer (schedule’s event must be **owned** by caller) |
 | **Invitations** (`prefix=/invitations`) | | |
 | GET | `/invitations` | user (query: event_id, status, tag_id, limit, offset) |
 | GET | `/invitations/{id}` | optional user (public or authenticated) |
@@ -173,7 +173,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | PUT/PATCH | `/payments/{id}` | user |
 | PATCH | `/payments/{id}/status` | user |
 
-**Public (no auth)**: `/health`, `GET /events`, `GET /events/{id}`, `GET /tags`, `GET /tags/{id}`, `GET /schedules`, `GET /schedules/{id}`, `GET /products`, `GET /products/{id}`. **Optional auth**: `GET /invitations/{id}`.
+**Public (no auth)**: `/health`, `GET /events`, `GET /events/{id}`, `GET /tags`, `GET /tags/{id}`, `GET /products`, `GET /products/{id}`. **Optional auth**: `GET /invitations/{id}`.
 
 ### Users (`/users`)
 

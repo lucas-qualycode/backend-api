@@ -1,16 +1,20 @@
 import uuid
 
+from application.schedules.event_access import ensure_user_owns_event
 from application.schedules.schemas import CreateScheduleInput
+from domain.events.repository import EventRepository
 from domain.schedules.entity import Schedule, ScheduleExclusion
 from domain.schedules.repository import ScheduleRepository
 
 
 def create_schedule(
     repo: ScheduleRepository,
+    event_repo: EventRepository,
     data: CreateScheduleInput,
     last_updated_by: str,
     now: str,
 ) -> Schedule:
+    ensure_user_owns_event(event_repo, data.event_id, last_updated_by)
     exclusions = [
         ScheduleExclusion(
             id=str(uuid.uuid4()),
