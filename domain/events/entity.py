@@ -7,9 +7,7 @@ class Event(BaseModel):
     id: str
     name: str
     description: str | None = None
-    location: str | None = None
-    location_address: str | None = None
-    location_link: str | None = None
+    location_id: str | None = None
     active: bool
     is_paid: bool
     is_online: bool

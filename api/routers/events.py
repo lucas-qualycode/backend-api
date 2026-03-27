@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from api.auth import CurrentUser, RequireOrganizer, UserOrGuestListAuth, get_user_or_guest_list
 from api.deps import (
     get_event_repository,
+    get_location_repository,
     get_tag_repository,
     get_tagging_repository,
     get_user_product_repository,
@@ -15,8 +16,9 @@ from application.events import (
     list_events_as_dicts,
     update_event,
 )
+from application.events.embed_event_response import embed_event_response_dict
 from application.events.schemas import CreateEventInput, UpdateEventInput
-from application.taggings import embed_tags_on_event, validate_tag_ids_for_entity
+from application.taggings import validate_tag_ids_for_entity
 from application.user_products.list_user_products import list_user_products
 from domain.events.entity import EventQueryParams
 from domain.events.exceptions import EventNotFoundError
@@ -42,6 +44,7 @@ def list_events_endpoint(
     event_repo=Depends(get_event_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
+    location_repo=Depends(get_location_repository),
 ):
     params = EventQueryParams(
         name=name,
@@ -54,7 +57,7 @@ def list_events_endpoint(
         limit=limit,
         offset=offset,
     )
-    return list_events_as_dicts(event_repo, tagging_repo, tag_repo, params)
+    return list_events_as_dicts(event_repo, tagging_repo, tag_repo, location_repo, params)
 
 
 @router.get("/{id}")
@@ -63,10 +66,11 @@ def get_event_endpoint(
     event_repo=Depends(get_event_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
+    location_repo=Depends(get_location_repository),
 ):
     try:
         event = get_event(event_repo, id)
-        return embed_tags_on_event(event, tagging_repo, tag_repo)
+        return embed_event_response_dict(event, tagging_repo, tag_repo, location_repo)
     except EventNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -105,6 +109,7 @@ def create_event_endpoint(
     data: CreateEventInput,
     current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_repository),
+    location_repo=Depends(get_location_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
 ):
@@ -118,7 +123,10 @@ def create_event_endpoint(
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=e.message)
     now = get_timestamp()
-    event = create_event(repo, data, current_user.uid, now)
+    try:
+        event = create_event(repo, location_repo, data, current_user.uid, now)
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message)
     tagging_repo.replace_all_for_entity(
         TaggingEntityType.EVENT,
         event.id,
@@ -126,7 +134,7 @@ def create_event_endpoint(
         current_user.uid,
         now,
     )
-    return embed_tags_on_event(event, tagging_repo, tag_repo)
+    return embed_event_response_dict(event, tagging_repo, tag_repo, location_repo)
 
 
 @router.put("/{id}")
@@ -136,12 +144,16 @@ def update_event_endpoint(
     data: UpdateEventInput,
     current_user: CurrentUser = RequireOrganizer,
     repo=Depends(get_event_repository),
+    location_repo=Depends(get_location_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
 ):
     try:
         now = get_timestamp()
-        event = update_event(repo, id, data, current_user.uid, now)
+        try:
+            event = update_event(repo, location_repo, id, data, current_user.uid, now)
+        except ValidationError as e:
+            raise HTTPException(status_code=400, detail=e.message)
         if data.tag_ids is not None:
             try:
                 validate_tag_ids_for_entity(
@@ -159,7 +171,7 @@ def update_event_endpoint(
                 current_user.uid,
                 now,
             )
-        return embed_tags_on_event(event, tagging_repo, tag_repo)
+        return embed_event_response_dict(event, tagging_repo, tag_repo, location_repo)
     except EventNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

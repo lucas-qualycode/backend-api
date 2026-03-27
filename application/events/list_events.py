@@ -1,6 +1,7 @@
-from application.taggings.embed import embed_tags_on_events
+from application.events.embed_event_response import embed_events_response_dicts
 from domain.events.entity import Event, EventQueryParams
 from domain.events.repository import EventRepository
+from domain.locations.repository import LocationRepository
 from domain.tags.repository import TagRepository
 from domain.taggings.entity import TaggingEntityType
 from domain.taggings.repository import TaggingRepository
@@ -27,6 +28,7 @@ def list_events_as_dicts(
     event_repo: EventRepository,
     tagging_repo: TaggingRepository,
     tag_repo: TagRepository,
+    location_repo: LocationRepository,
     query_params: EventQueryParams,
 ) -> list[dict]:
     if query_params.tag_id:
@@ -54,6 +56,6 @@ def list_events_as_dicts(
             if query_params.name is not None and ev.name != query_params.name:
                 continue
             events.append(ev)
-        return embed_tags_on_events(events, tagging_repo, tag_repo)
+        return embed_events_response_dicts(events, tagging_repo, tag_repo, location_repo)
     raw = event_repo.list(_params_without_tag_filter(query_params))
-    return embed_tags_on_events(raw, tagging_repo, tag_repo)
+    return embed_events_response_dicts(raw, tagging_repo, tag_repo, location_repo)
