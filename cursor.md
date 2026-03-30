@@ -19,7 +19,7 @@ The codebase follows a **layered (clean-style)** structure with clear dependency
 
 - **API (HTTP)** → **Application (use cases)** → **Domain** ← **Infrastructure**
 - **Domain** has no dependencies on API or infrastructure: only Pydantic entities, abstract repository interfaces, and domain exceptions. It is the core.
-- **Application** depends only on domain: use-case functions receive repository abstractions and DTOs, return entities or raise domain exceptions. No FastAPI or Firestore imports.
+- **Application** depends on domain and, where needed, **infrastructure config** and **Firestore transactions** for atomic multi-document writes. Most use cases still take only repositories; **product create/update/delete** uses `application/products/firestore_write.py` (Google Cloud Firestore `@transactional`) so `products` and `inventory` stay consistent.
 - **API** depends on application and domain: routers parse HTTP, call application use cases, map exceptions to status codes. Uses FastAPI (`Depends`, `APIRouter`, etc.) and injects repositories via `api/deps.py`.
 - **Infrastructure** depends on domain: Firestore repositories implement the abstract `*Repository` interfaces; `firestore_common` provides `get_timestamp` and `apply_filters`. No application or API imports.
 
@@ -34,6 +34,15 @@ Routers are thin (parse → call use case → return JSON). Business logic lives
 - **Use-case / application service**: One (or a few) functions per operation under `application/<agg>/` (e.g. `create_event`, `check_in_attendee`). They orchestrate domain and repositories; no HTTP or Firestore types.
 - **Thin controllers**: Routers only validate auth, build query/body params, call one application function, and return `entity.model_dump(mode="json")` or list of same. Validation of input is via Pydantic (schemas in `application/*/schemas.py`) and optional domain validators in `utils/validators.py`.
 - **Query params and filters**: List endpoints accept query params; these are mapped to `*QueryParams` models that have a `FILTER_SPEC` (param_attr, field, op) used by `apply_filters()` to build Firestore queries.
+
+### Products and inventory
+
+- **Inventory document id**: **`PRODUCT_<productId>`** for every sellable product. The `inventory` document’s `product_type` field is `TICKET` or `PRODUCT` (see `domain/products/types.py`).
+- **Create**: `create_product` validates input, sets `user_id` from the authenticated user (body does not accept `user_id`), builds `Product` + `InventoryItem`, then **one transaction** writes both collections.
+- **Update**: Merged product is validated; transaction updates product and inventory; `available_quantity = max(0, new_total_quantity - reserved_quantity)` when quantity changes.
+- **Delete**: Soft-delete product and deactivate inventory (`available_quantity = 0`, metadata) in one transaction, then remove product taggings.
+- **API responses**: List/get/create/update product JSON includes **`inventory`**: `{ id, available_quantity, reserved_quantity, total_quantity }` or `null` if no row exists.
+- **DI**: `get_inventory_repository` in `api/deps.py` wires `FirestoreInventoryRepository`.
 
 ---
 

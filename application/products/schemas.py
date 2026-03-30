@@ -4,10 +4,10 @@ from pydantic import BaseModel
 class CreateProductInput(BaseModel):
     name: str
     description: str
+    imageURL: str | None = None
     parent_id: str | None = None
     parent_type: str | None = None
     type: str | None = None
-    user_id: str
     is_free: bool
     value: int
     quantity: int
@@ -21,10 +21,10 @@ class CreateProductInput(BaseModel):
 class UpdateProductInput(BaseModel):
     name: str | None = None
     description: str | None = None
+    imageURL: str | None = None
     parent_id: str | None = None
     parent_type: str | None = None
     type: str | None = None
-    user_id: str | None = None
     is_free: bool | None = None
     value: int | None = None
     quantity: int | None = None

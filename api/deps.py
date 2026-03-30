@@ -10,6 +10,7 @@ from infrastructure.persistence.firestore_taggings import FirestoreTaggingReposi
 from infrastructure.persistence.firestore_tags import FirestoreTagRepository
 from infrastructure.persistence.firestore_locations import FirestoreLocationRepository
 from infrastructure.persistence.firestore_invitations import FirestoreInvitationRepository
+from infrastructure.persistence.firestore_inventory import FirestoreInventoryRepository
 from infrastructure.persistence.firestore_orders import FirestoreOrderRepository
 from infrastructure.persistence.firestore_payments import FirestorePaymentRepository
 from infrastructure.persistence.firestore_products import FirestoreProductRepository
@@ -57,6 +58,10 @@ def get_attendee_repository(db: Any = Depends(get_db)) -> FirestoreAttendeeRepos
 
 def get_product_repository(db: Any = Depends(get_db)) -> FirestoreProductRepository:
     return FirestoreProductRepository(db)
+
+
+def get_inventory_repository(db: Any = Depends(get_db)) -> FirestoreInventoryRepository:
+    return FirestoreInventoryRepository(db)
 
 
 def get_user_product_repository(db: Any = Depends(get_db)) -> FirestoreUserProductRepository:

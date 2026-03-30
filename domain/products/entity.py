@@ -7,6 +7,7 @@ class Product(BaseModel):
     id: str
     name: str
     description: str
+    imageURL: str | None = None
     parent_id: str | None = None
     parent_type: str | None = None
     type: str | None = None

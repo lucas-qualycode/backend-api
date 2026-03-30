@@ -11,6 +11,15 @@ class OrderItemInput(BaseModel):
     metadata: dict = {}
 
 
+class CreateOrderRequest(BaseModel):
+    parent_id: str | None = None
+    invitation_id: str | None = None
+    items: list[OrderItemInput]
+    currency: str
+    metadata: dict = {}
+    expires_at: str | None = None
+
+
 class CreateOrderInput(BaseModel):
     user_id: str
     parent_id: str | None = None

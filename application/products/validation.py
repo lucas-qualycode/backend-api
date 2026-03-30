@@ -1,0 +1,53 @@
+from application.products.schemas import CreateProductInput, UpdateProductInput
+from domain.products.entity import Product
+from utils.errors import ValidationError
+from utils.validators import validate_name
+
+
+def validate_product_create(data: CreateProductInput) -> None:
+    if not data.name or not data.name.strip():
+        raise ValidationError("name is required")
+    validate_name(data.name, "name")
+    if data.description is None or not str(data.description).strip():
+        raise ValidationError("description is required")
+    if data.is_free:
+        if data.value != 0:
+            raise ValidationError("value must be 0 when is_free is true")
+    else:
+        if data.value <= 0:
+            raise ValidationError("value must be greater than 0 when is_free is false")
+    if data.quantity <= 0:
+        raise ValidationError("quantity must be a positive integer")
+    if data.max_per_user <= 0:
+        raise ValidationError("max_per_user must be a positive integer")
+
+
+def validate_product_state(product: Product) -> None:
+    if not product.name or not product.name.strip():
+        raise ValidationError("name is required")
+    validate_name(product.name, "name")
+    if not product.description or not str(product.description).strip():
+        raise ValidationError("description is required")
+    if product.is_free:
+        if product.value != 0:
+            raise ValidationError("value must be 0 when is_free is true")
+    else:
+        if product.value <= 0:
+            raise ValidationError("value must be greater than 0 when is_free is false")
+    if product.quantity <= 0:
+        raise ValidationError("quantity must be a positive integer")
+    if product.max_per_user <= 0:
+        raise ValidationError("max_per_user must be a positive integer")
+
+
+def validate_product_update_patch(data: UpdateProductInput) -> None:
+    if data.name is not None:
+        if not data.name.strip():
+            raise ValidationError("name cannot be empty")
+        validate_name(data.name, "name")
+    if data.description is not None and not str(data.description).strip():
+        raise ValidationError("description cannot be empty")
+    if data.quantity is not None and data.quantity <= 0:
+        raise ValidationError("quantity must be a positive integer")
+    if data.max_per_user is not None and data.max_per_user <= 0:
+        raise ValidationError("max_per_user must be a positive integer")

@@ -11,7 +11,7 @@ from application.attendees import (
     update_attendee_status,
 )
 from application.attendees.check_in_attendee import UserProductNotForEventError, UserProductNotFoundError
-from application.attendees.schemas import CreateAttendeeInput
+from application.attendees.schemas import CreateAttendeeInput, CreateAttendeeRequest
 from domain.attendees.entity import AttendeeQueryParams
 from domain.attendees.exceptions import AttendeeNotFoundError
 from domain.events.exceptions import EventNotFoundError
@@ -69,12 +69,12 @@ def get_attendee_endpoint(
 @router.post("/{event_id}/attendees", status_code=201)
 def create_attendee_endpoint(
     event_id: str,
-    data: CreateAttendeeInput,
+    data: CreateAttendeeRequest,
     current_user: CurrentUser = Depends(get_current_user),
     repo=Depends(get_attendee_repository),
 ):
     try:
-        data_with_user = data.model_copy(update={"user_id": current_user.uid})
+        data_with_user = CreateAttendeeInput(**data.model_dump(), user_id=current_user.uid)
         return create_attendee(repo, data_with_user, event_id, get_timestamp()).model_dump(mode="json")
     except AttendeeNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

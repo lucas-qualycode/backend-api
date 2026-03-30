@@ -10,7 +10,11 @@ from application.user_products import (
     update_user_product,
     update_user_product_status,
 )
-from application.user_products.schemas import CreateUserProductInput, UpdateUserProductInput
+from application.user_products.schemas import (
+    CreateUserProductInput,
+    CreateUserProductRequest,
+    UpdateUserProductInput,
+)
 from domain.user_products.entity import UserProductQueryParams
 from domain.user_products.exceptions import UserProductNotFoundError
 from infrastructure.persistence.firestore_common import get_timestamp
@@ -59,11 +63,11 @@ def get_user_product_endpoint(
 
 @router.post("", status_code=201)
 def create_user_product_endpoint(
-    data: CreateUserProductInput,
+    data: CreateUserProductRequest,
     current_user: CurrentUser = Depends(get_current_user),
     repo=Depends(get_user_product_repository),
 ):
-    data_with_user = data.model_copy(update={"user_id": current_user.uid})
+    data_with_user = CreateUserProductInput(**data.model_dump(), user_id=current_user.uid)
     return create_user_product(repo, data_with_user, get_timestamp()).model_dump(mode="json")
 
 

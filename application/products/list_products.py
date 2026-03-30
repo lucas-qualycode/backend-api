@@ -1,4 +1,6 @@
+from application.products.embed_inventory import embed_inventory_on_product_dicts
 from application.taggings.embed import embed_tags_on_products
+from domain.inventory.repository import InventoryRepository
 from domain.products.entity import Product, ProductQueryParams
 from domain.products.repository import ProductRepository
 from domain.tags.repository import TagRepository
@@ -28,6 +30,7 @@ def list_products_as_dicts(
     product_repo: ProductRepository,
     tagging_repo: TaggingRepository,
     tag_repo: TagRepository,
+    inventory_repo: InventoryRepository,
     query_params: ProductQueryParams,
 ) -> list[dict]:
     if query_params.tag_id:
@@ -49,6 +52,8 @@ def list_products_as_dicts(
             if query_params.deleted is not None and p.deleted != query_params.deleted:
                 continue
             products.append(p)
-        return embed_tags_on_products(products, tagging_repo, tag_repo)
+        tagged = embed_tags_on_products(products, tagging_repo, tag_repo)
+        return embed_inventory_on_product_dicts(tagged, inventory_repo)
     raw = product_repo.list(_params_without_tag_filter(query_params))
-    return embed_tags_on_products(raw, tagging_repo, tag_repo)
+    tagged = embed_tags_on_products(raw, tagging_repo, tag_repo)
+    return embed_inventory_on_product_dicts(tagged, inventory_repo)

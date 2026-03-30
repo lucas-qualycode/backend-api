@@ -8,7 +8,7 @@ from application.payments import (
     list_payments,
     update_payment_status,
 )
-from application.payments.schemas import CreatePaymentInput, UpdatePaymentStatusInput
+from application.payments.schemas import CreatePaymentInput, CreatePaymentRequest, UpdatePaymentStatusInput
 from domain.payments.entity import PaymentQueryParams
 from domain.payments.exceptions import PaymentNotFoundError
 from infrastructure.persistence.firestore_common import get_timestamp
@@ -45,11 +45,11 @@ def get_payment_endpoint(
 
 @router.post("", status_code=201)
 def create_payment_endpoint(
-    data: CreatePaymentInput,
+    data: CreatePaymentRequest,
     current_user: CurrentUser = Depends(get_current_user),
     repo=Depends(get_payment_repository),
 ):
-    data_with_user = data.model_copy(update={"user_id": current_user.uid})
+    data_with_user = CreatePaymentInput(**data.model_dump(), user_id=current_user.uid)
     return create_payment(repo, data_with_user, get_timestamp()).model_dump(mode="json")
 
 

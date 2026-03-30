@@ -1,26 +1,33 @@
 import uuid
+from typing import Any
 
+from application.products.firestore_write import run_create_product_with_inventory
+from application.products.inventory_build import new_inventory_item_for_product
 from application.products.schemas import CreateProductInput
+from application.products.validation import validate_product_create
 from domain.products.entity import Product
-from domain.products.repository import ProductRepository
+from infrastructure.config import DEFAULT_INVENTORY_CURRENCY
 
 
 def create_product(
-    repo: ProductRepository,
+    db: Any,
     data: CreateProductInput,
     created_by: str,
     now: str,
 ) -> Product:
+    validate_product_create(data)
+    value = 0 if data.is_free else data.value
     product = Product(
         id=str(uuid.uuid4()),
-        name=data.name,
-        description=data.description,
+        name=data.name.strip(),
+        description=str(data.description).strip(),
+        imageURL=(data.imageURL.strip() if data.imageURL and str(data.imageURL).strip() else None),
         parent_id=data.parent_id,
         parent_type=data.parent_type,
         type=data.type,
-        user_id=data.user_id,
+        user_id=created_by,
         is_free=data.is_free,
-        value=data.value,
+        value=value,
         quantity=data.quantity,
         max_per_user=data.max_per_user,
         request_additional_info=data.request_additional_info,
@@ -32,4 +39,6 @@ def create_product(
         last_updated_by=created_by,
         metadata=data.metadata,
     )
-    return repo.create(product)
+    inventory = new_inventory_item_for_product(product, now, DEFAULT_INVENTORY_CURRENCY)
+    run_create_product_with_inventory(db, product, inventory)
+    return product
