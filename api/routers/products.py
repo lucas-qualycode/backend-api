@@ -20,6 +20,7 @@ from application.products.schemas import CreateProductInput, UpdateProductInput
 from application.taggings import embed_tags_on_product, validate_tag_ids_for_entity
 from domain.products.entity import ProductQueryParams
 from domain.products.exceptions import ProductNotFoundError
+from domain.products.types import ProductType
 from domain.taggings.entity import TaggingEntityType
 from infrastructure.persistence.firestore_common import get_timestamp
 from utils.errors import ValidationError
@@ -31,6 +32,7 @@ router = APIRouter(prefix="/products", tags=["products"])
 def list_products_endpoint(
     name: str | None = None,
     parent_id: str | None = None,
+    type: ProductType | None = None,
     active: bool | None = None,
     deleted: bool | None = None,
     tag_id: str | None = None,
@@ -44,6 +46,7 @@ def list_products_endpoint(
     params = ProductQueryParams(
         name=name,
         parent_id=parent_id,
+        type=type,
         active=active,
         deleted=deleted,
         limit=limit,
@@ -66,7 +69,8 @@ def get_product_endpoint(
     try:
         product = get_product(repo, id)
         row = embed_tags_on_product(product, tagging_repo, tag_repo)
-        return embed_inventory_on_one_product_dict(row, inventory_repo)
+        row = embed_inventory_on_one_product_dict(row, inventory_repo)
+        return row
     except ProductNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

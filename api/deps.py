@@ -4,6 +4,9 @@ from fastapi import Depends
 
 from infrastructure.firebase import get_firestore_client
 from infrastructure.persistence.firestore_addresses import FirestoreAddressRepository
+from infrastructure.persistence.firestore_field_definitions import (
+    FirestoreFieldDefinitionRepository,
+)
 from infrastructure.persistence.firestore_attendees import FirestoreAttendeeRepository
 from infrastructure.persistence.firestore_events import FirestoreEventRepository
 from infrastructure.persistence.firestore_taggings import FirestoreTaggingRepository
@@ -58,6 +61,12 @@ def get_attendee_repository(db: Any = Depends(get_db)) -> FirestoreAttendeeRepos
 
 def get_product_repository(db: Any = Depends(get_db)) -> FirestoreProductRepository:
     return FirestoreProductRepository(db)
+
+
+def get_field_definition_repository(
+    db: Any = Depends(get_db),
+) -> FirestoreFieldDefinitionRepository:
+    return FirestoreFieldDefinitionRepository(db)
 
 
 def get_inventory_repository(db: Any = Depends(get_db)) -> FirestoreInventoryRepository:

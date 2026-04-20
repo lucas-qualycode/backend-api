@@ -37,12 +37,24 @@ Routers are thin (parse → call use case → return JSON). Business logic lives
 
 ### Products and inventory
 
+- **Product kind (`type`)**: **`TICKET`** \| **`MERCH`** (`domain.products.types.ProductType`). On Firestore read, missing or unknown `type` is normalized to **`MERCH`** (`Product._migrate_legacy_type`). Create/update bodies use the enum; list filter **`GET /products?type=`** accepts `TICKET` or `MERCH`. Inventory rows still use **`product_type`** `TICKET` vs `PRODUCT` (`InventoryProductType`); `MERCH` products map to inventory `PRODUCT`.
+- **Fulfillment**: optional **`fulfillment_type`**: `DIGITAL` \| `WILL_CALL` \| `SHIPPING` \| `PICKUP`; optional **`fulfillment_profile_id`** for future profile documents. Checkout and fulfillment flows can branch on these instead of inferring from kind alone.
+- **Catalog vs commerce vs stock (field grouping)**: **`domain.products.field_groups`** defines `PRODUCT_CATALOG_FIELD_NAMES` (presentation, kind, fulfillment, additional-info field refs, `metadata`), `PRODUCT_COMMERCE_FIELD_NAMES` (`value`, `is_free`), `PRODUCT_STOCK_FIELD_NAMES` (`quantity`). **Single source of truth for sellable quantity**: the **`inventory`** document (reserved vs available) is updated in the same transaction as **`products`** (`application/products/firestore_write.py`); `Product.quantity` is the line-of-record for total stock on the product and must stay aligned with inventory updates through those use cases—not ad hoc edits.
+- **Product additional info fields**: products store **`additional_info_fields`** refs (`field_id` + optional `label`, `required`, `order`, `active`). `request_additional_info` remains for compatibility and is derived from whether refs are present.
 - **Inventory document id**: **`PRODUCT_<productId>`** for every sellable product. The `inventory` document’s `product_type` field is `TICKET` or `PRODUCT` (see `domain/products/types.py`).
 - **Create**: `create_product` validates input, sets `user_id` from the authenticated user (body does not accept `user_id`), builds `Product` + `InventoryItem`, then **one transaction** writes both collections.
 - **Update**: Merged product is validated; transaction updates product and inventory; `available_quantity = max(0, new_total_quantity - reserved_quantity)` when quantity changes.
 - **Delete**: Soft-delete product and deactivate inventory (`available_quantity = 0`, metadata) in one transaction, then remove product taggings.
 - **API responses**: List/get/create/update product JSON includes **`inventory`**: `{ id, available_quantity, reserved_quantity, total_quantity }` or `null` if no row exists.
 - **DI**: `get_inventory_repository` in `api/deps.py` wires `FirestoreInventoryRepository`.
+
+### Field definitions
+
+Field definitions are reusable documents in **`fieldDefinitions`** and can be attached to products. Each definition includes `key`, `label`, `field_type` (`text` \| `number` \| `boolean` \| `select`), default required flag, and optional constraints (`min_length`, `max_length`, `minimum`, `maximum`, `options`). Validation for create/update definitions is in `application/field_definitions/validation.py`.
+
+### Orders and `additional_data`
+
+On **`POST /orders`**, `application/orders/validate_additional_data.py` runs before persist: for each line item, load the product and resolve its `additional_info_fields` against field definitions. **`additional_data`** must be a list of length **`quantity`**; each entry must match resolved keys and type/constraint rules. If the product has no field refs, `additional_data` must be absent/empty. For transition compatibility, validation accepts legacy `metadata.additional_data` when `additional_data` is omitted. Payment approval reads `item.additional_data` first and falls back to legacy metadata, then copies per-unit values to **`UserProduct.additional_data`**.
 
 ---
 
@@ -147,6 +159,11 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | POST | `/invitations` | organizer |
 | PUT/PATCH | `/invitations/{id}` | organizer |
 | POST | `/invitations/{id}/status` | organizer |
+| **Field definitions** (`prefix=/field-definitions`) | | |
+| GET | `/field-definitions` | none (query: active, deleted, field_type, limit, offset) |
+| GET | `/field-definitions/{id}` | none |
+| POST | `/field-definitions` | organizer |
+| PUT/PATCH | `/field-definitions/{id}` | organizer |
 | **Products** (`prefix=/products`) | | |
 | GET | `/products` | none (query: name, parent_id, active, deleted, tag_id, limit, offset) |
 | GET | `/products/{id}` | none |
@@ -172,7 +189,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | **Orders** (`prefix=/orders`) | | |
 | GET | `/orders` | user |
 | GET | `/orders/{id}` | user |
-| POST | `/orders` | user |
+| POST | `/orders` | user (each line item: `additional_data` is validated per product field refs — see **Orders and additional_data** below) |
 | PUT/PATCH | `/orders/{id}` | user |
 | PATCH | `/orders/{id}/status` | user |
 | **Payments** (`prefix=/payments`) | | |
@@ -194,7 +211,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 
 ## Firestore collections
 
-Defined in `infrastructure/config.py`. Top-level: `events`, `tags`, `taggings`, `products`, `userProducts`, `inventory`, `users`, `addresses`, `orders`, `payments`. Subcollections: under `events/{eventId}` → `stands`, `schedules`, `invitations`, `attendees`. Names: `EVENTS_COLLECTION_NAME` = `"events"`, `TAGS_COLLECTION_NAME` = `"tags"`, `TAGGINGS_COLLECTION_NAME` = `"taggings"`, `STANDS_COLLECTION_NAME` = `"stands"`, `SCHEDULES_COLLECTION_NAME` = `"schedules"`, `INVITATIONS_COLLECTION_NAME` = `"invitations"`, `ATTENDEES_COLLECTION_NAME` = `"attendees"`, `PRODUCTS_COLLECTION_NAME` = `"products"`, `USER_PRODUCTS_COLLECTION_NAME` = `"userProducts"`, `INVENTORY_COLLECTION_NAME` = `"inventory"`, `USERS_COLLECTION_NAME` = `"users"`, `ADDRESSES_COLLECTION_NAME` = `"addresses"`, `ORDERS_COLLECTION_NAME` = `"orders"`, `PAYMENTS_COLLECTION_NAME` = `"payments"`.
+Defined in `infrastructure/config.py`. Top-level: `events`, `tags`, `taggings`, `products`, `fieldDefinitions`, `userProducts`, `inventory`, `users`, `addresses`, `orders`, `payments`. Subcollections: under `events/{eventId}` → `stands`, `schedules`, `invitations`, `attendees`. Names: `EVENTS_COLLECTION_NAME` = `"events"`, `TAGS_COLLECTION_NAME` = `"tags"`, `TAGGINGS_COLLECTION_NAME` = `"taggings"`, `STANDS_COLLECTION_NAME` = `"stands"`, `SCHEDULES_COLLECTION_NAME` = `"schedules"`, `INVITATIONS_COLLECTION_NAME` = `"invitations"`, `ATTENDEES_COLLECTION_NAME` = `"attendees"`, `PRODUCTS_COLLECTION_NAME` = `"products"`, `FIELD_DEFINITIONS_COLLECTION_NAME` = `"fieldDefinitions"`, `USER_PRODUCTS_COLLECTION_NAME` = `"userProducts"`, `INVENTORY_COLLECTION_NAME` = `"inventory"`, `USERS_COLLECTION_NAME` = `"users"`, `ADDRESSES_COLLECTION_NAME` = `"addresses"`, `ORDERS_COLLECTION_NAME` = `"orders"`, `PAYMENTS_COLLECTION_NAME` = `"payments"`.
 
 Composite index definitions for `tags` / `taggings` live in [`firestore.indexes.json`](firestore.indexes.json) in this directory (and in [`backend/firestore.indexes.json`](../backend/firestore.indexes.json) for the wider Firebase project).
 
@@ -202,7 +219,7 @@ Composite index definitions for `tags` / `taggings` live in [`firestore.indexes.
 
 ## Exception handling (app.py)
 
-- **404**: `NotFoundError` (content `{"error": exc.message}`); and each domain not-found: `EventNotFoundError`, `TagNotFoundError`, `StandNotFoundError`, `ScheduleNotFoundError`, `InvitationNotFoundError`, `AttendeeNotFoundError`, `ProductNotFoundError`, `UserProductNotFoundError`, `UserNotFoundError`, `AddressNotFoundError`, `OrderNotFoundError`, `PaymentNotFoundError` (content `{"error": str(exc)}`).
+- **404**: `NotFoundError` (content `{"error": exc.message}`); and each domain not-found: `EventNotFoundError`, `TagNotFoundError`, `StandNotFoundError`, `ScheduleNotFoundError`, `InvitationNotFoundError`, `AttendeeNotFoundError`, `ProductNotFoundError`, `UserProductNotFoundError`, `UserNotFoundError`, `FieldDefinitionNotFoundError`, `AddressNotFoundError`, `OrderNotFoundError`, `PaymentNotFoundError` (content `{"error": str(exc)}`).
 - **400**: `ValidationError` → `{"error": exc.message}`; Pydantic validation → `{"error": exc.errors()}`.
 - **500**: Any other exception → `{"error": "Internal server error"}` (and logged).
 

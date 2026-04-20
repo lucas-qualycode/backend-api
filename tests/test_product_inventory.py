@@ -9,6 +9,8 @@ from application.products.validation import validate_product_create, validate_pr
 from domain.inventory.entity import InventoryItem
 from domain.products.entity import Product
 from domain.products.types import (
+    InventoryProductType,
+    ProductType,
     inventory_document_id,
     inventory_product_type_field,
 )
@@ -21,9 +23,11 @@ def test_inventory_document_id() -> None:
 
 
 def test_inventory_product_type_field() -> None:
-    assert inventory_product_type_field(None) == "PRODUCT"
-    assert inventory_product_type_field("TICKET") == "TICKET"
-    assert inventory_product_type_field("OTHER") == "PRODUCT"
+    assert inventory_product_type_field(None) == InventoryProductType.PRODUCT
+    assert inventory_product_type_field("TICKET") == InventoryProductType.TICKET
+    assert inventory_product_type_field(ProductType.MERCH) == InventoryProductType.PRODUCT
+    assert inventory_product_type_field(ProductType.TICKET) == InventoryProductType.TICKET
+    assert inventory_product_type_field("OTHER") == InventoryProductType.PRODUCT
 
 
 def test_new_inventory_item_for_product() -> None:
@@ -33,13 +37,14 @@ def test_new_inventory_item_for_product() -> None:
         description="d",
         parent_id="e1",
         parent_type="EVENT",
-        type="TICKET",
+        type=ProductType.TICKET,
         user_id="u1",
         is_free=False,
         value=1000,
         quantity=50,
         max_per_user=5,
         request_additional_info=False,
+        additional_info_fields=[],
         active=True,
         deleted=False,
         created_at="t0",
@@ -64,13 +69,14 @@ def test_inventory_update_respects_reserved() -> None:
         description="d",
         parent_id=None,
         parent_type=None,
-        type=None,
+        type=ProductType.MERCH,
         user_id="u1",
         is_free=False,
         value=100,
         quantity=10,
         max_per_user=1,
         request_additional_info=False,
+        additional_info_fields=[],
         active=True,
         deleted=False,
         created_at="t0",
@@ -105,13 +111,14 @@ def test_inventory_update_reserved_exceeds_new_total() -> None:
         description="d",
         parent_id=None,
         parent_type=None,
-        type=None,
+        type=ProductType.MERCH,
         user_id="u1",
         is_free=False,
         value=100,
         quantity=5,
         max_per_user=1,
         request_additional_info=False,
+        additional_info_fields=[],
         active=True,
         deleted=False,
         created_at="t0",
@@ -194,7 +201,7 @@ def test_validate_product_state() -> None:
         description="d",
         parent_id=None,
         parent_type=None,
-        type=None,
+        type=ProductType.MERCH,
         user_id="u1",
         is_free=False,
         value=1,

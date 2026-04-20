@@ -12,6 +12,7 @@ def _params_without_tag_filter(q: ProductQueryParams) -> ProductQueryParams:
     return ProductQueryParams(
         name=q.name,
         parent_id=q.parent_id,
+        type=q.type,
         active=q.active,
         deleted=q.deleted,
         limit=q.limit,
@@ -50,6 +51,8 @@ def list_products_as_dicts(
             if query_params.active is not None and p.active != query_params.active:
                 continue
             if query_params.deleted is not None and p.deleted != query_params.deleted:
+                continue
+            if query_params.type is not None and p.type != query_params.type:
                 continue
             products.append(p)
         tagged = embed_tags_on_products(products, tagging_repo, tag_repo)

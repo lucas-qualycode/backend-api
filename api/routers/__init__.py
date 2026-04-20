@@ -1,6 +1,7 @@
 from api.routers.addresses import router as addresses_router
 from api.routers.attendees import router as attendees_router
 from api.routers.events import router as events_router
+from api.routers.field_definitions import router as field_definitions_router
 from api.routers.locations import router as locations_router
 from api.routers.invitations import router as invitations_router
 from api.routers.orders import router as orders_router
@@ -13,6 +14,7 @@ from api.routers.user_products import router as user_products_router
 from api.routers.users import router as users_router
 
 __all__ = [
+    "field_definitions_router",
     "events_router",
     "locations_router",
     "tags_router",

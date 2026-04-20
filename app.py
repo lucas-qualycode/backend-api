@@ -8,6 +8,7 @@ from api.routers import (
     addresses_router,
     attendees_router,
     events_router,
+    field_definitions_router,
     locations_router,
     invitations_router,
     orders_router,
@@ -20,6 +21,7 @@ from api.routers import (
     users_router,
 )
 from domain.addresses.exceptions import AddressNotFoundError
+from domain.field_definitions.exceptions import FieldDefinitionNotFoundError
 from domain.attendees.exceptions import AttendeeNotFoundError
 from domain.tags.exceptions import TagNotFoundError
 from domain.events.exceptions import EventNotFoundError
@@ -38,6 +40,7 @@ log = logging.getLogger("app")
 
 app = FastAPI(title="Event Social Media API")
 
+app.include_router(field_definitions_router)
 app.include_router(events_router)
 app.include_router(locations_router)
 app.include_router(stands_router)
@@ -74,6 +77,7 @@ async def handle_not_found(request: Request, exc: NotFoundError):
 @app.exception_handler(ProductNotFoundError)
 @app.exception_handler(UserProductNotFoundError)
 @app.exception_handler(UserNotFoundError)
+@app.exception_handler(FieldDefinitionNotFoundError)
 @app.exception_handler(AddressNotFoundError)
 @app.exception_handler(OrderNotFoundError)
 @app.exception_handler(PaymentNotFoundError)

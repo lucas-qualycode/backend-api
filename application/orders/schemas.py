@@ -9,6 +9,7 @@ class OrderItemInput(BaseModel):
     total_price: int | None = None
     currency: str
     metadata: dict = {}
+    additional_data: list[dict] | None = None
 
 
 class CreateOrderRequest(BaseModel):

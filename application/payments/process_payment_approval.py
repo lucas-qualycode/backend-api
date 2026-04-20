@@ -43,7 +43,10 @@ def process_payment_approval(
         base_metadata = {k: v for k, v in (item.metadata or {}).items() if k != "additional_data"}
         if invitation_id:
             base_metadata["invitation_id"] = invitation_id
-        additional_list = (item.metadata or {}).get("additional_data") if isinstance((item.metadata or {}).get("additional_data"), list) else []
+        additional_list = item.additional_data if isinstance(item.additional_data, list) else []
+        if not additional_list:
+            legacy = (item.metadata or {}).get("additional_data")
+            additional_list = legacy if isinstance(legacy, list) else []
         for i in range(item.quantity):
             additional_data = additional_list[i] if i < len(additional_list) else {}
             data = CreateUserProductInput(
