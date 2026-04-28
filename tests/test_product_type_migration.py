@@ -17,7 +17,6 @@ def _minimal_product_dict(**overrides):
         "value": 100,
         "quantity": 1,
         "max_per_user": 1,
-        "request_additional_info": False,
         "active": True,
         "deleted": False,
         "created_at": "t",

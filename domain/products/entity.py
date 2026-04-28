@@ -26,7 +26,6 @@ class Product(BaseModel):
     value: int
     quantity: int
     max_per_user: int
-    request_additional_info: bool
     additional_info_fields: list[ProductAdditionalInfoFieldRef] = Field(default_factory=list)
     fulfillment_type: FulfillmentType | None = None
     fulfillment_profile_id: str | None = None
@@ -44,6 +43,10 @@ class Product(BaseModel):
         if not isinstance(data, dict):
             return data
         out = dict(data)
+        if out.get("additional_info_fields") is None:
+            out["additional_info_fields"] = []
+        if out.get("metadata") is None:
+            out["metadata"] = {}
         t = out.get("type")
         if t is None or t == "":
             out["type"] = ProductType.MERCH.value

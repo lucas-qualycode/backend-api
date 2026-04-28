@@ -24,7 +24,6 @@ class CreateProductInput(BaseModel):
     value: int
     quantity: int
     max_per_user: int
-    request_additional_info: bool
     additional_info_fields: list[ProductAdditionalInfoFieldRefInput] = Field(default_factory=list)
     active: bool = True
     metadata: dict = {}
@@ -44,7 +43,6 @@ class UpdateProductInput(BaseModel):
     value: int | None = None
     quantity: int | None = None
     max_per_user: int | None = None
-    request_additional_info: bool | None = None
     additional_info_fields: list[ProductAdditionalInfoFieldRefInput] | None = None
     active: bool | None = None
     metadata: dict | None = None

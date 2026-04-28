@@ -26,7 +26,6 @@ def _product(
         value=100,
         quantity=99,
         max_per_user=5,
-        request_additional_info=bool(refs),
         additional_info_fields=refs or [],
         active=True,
         deleted=False,
@@ -46,6 +45,7 @@ def _field(fid: str, key: str, field_type: str = FieldType.TEXT, **kwargs) -> Fi
         description=None,
         field_type=field_type,
         required_default=kwargs.get("required_default", False),
+        format=kwargs.get("format"),
         min_length=kwargs.get("min_length"),
         max_length=kwargs.get("max_length"),
         minimum=kwargs.get("minimum"),
@@ -200,3 +200,62 @@ def test_legacy_metadata_additional_data_is_accepted() -> None:
     validate_order_items_additional_data(
         _FakeProductRepo(products), _FakeFieldRepo(fields), items
     )
+
+
+@pytest.mark.parametrize(
+    ("field_format", "value"),
+    [
+        ("email", "user@example.com"),
+        ("url", "https://example.com/path"),
+        ("date_iso", "2026-04-21"),
+        ("time_iso", "13:45:00"),
+        ("datetime_iso", "2026-04-21T13:45:00Z"),
+    ],
+)
+def test_text_format_valid_values(field_format: str, value: str) -> None:
+    pid, fid = "p1", "f1"
+    products = {pid: _product(pid, refs=[{"field_id": fid, "required": True}])}
+    fields = {fid: _field(fid, "contact", format=field_format)}
+    items = [
+        OrderItemInput(
+            product_id=pid,
+            quantity=1,
+            unit_price=10,
+            currency="BRL",
+            additional_data=[{"contact": value}],
+        )
+    ]
+    validate_order_items_additional_data(
+        _FakeProductRepo(products), _FakeFieldRepo(fields), items
+    )
+
+
+@pytest.mark.parametrize(
+    ("field_format", "value", "message"),
+    [
+        ("email", "invalid-email", "valid email"),
+        ("url", "ftp://example.com", "valid URL"),
+        ("date_iso", "21-04-2026", "valid ISO date"),
+        ("time_iso", "25:70", "valid ISO time"),
+        ("datetime_iso", "2026/04/21 13:45", "valid ISO datetime"),
+    ],
+)
+def test_text_format_rejects_invalid_values(
+    field_format: str, value: str, message: str
+) -> None:
+    pid, fid = "p1", "f1"
+    products = {pid: _product(pid, refs=[{"field_id": fid, "required": True}])}
+    fields = {fid: _field(fid, "contact", format=field_format)}
+    items = [
+        OrderItemInput(
+            product_id=pid,
+            quantity=1,
+            unit_price=10,
+            currency="BRL",
+            additional_data=[{"contact": value}],
+        )
+    ]
+    with pytest.raises(ValidationError, match=message):
+        validate_order_items_additional_data(
+            _FakeProductRepo(products), _FakeFieldRepo(fields), items
+        )

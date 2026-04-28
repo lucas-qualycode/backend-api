@@ -27,6 +27,9 @@ def update_field_definition(
     if "description" in patch:
         raw = patch["description"]
         patch["description"] = raw.strip() if raw and str(raw).strip() else None
+    if "format" in patch:
+        raw = patch["format"]
+        patch["format"] = raw.strip() if raw and str(raw).strip() else None
     if "options" in patch and patch["options"] is not None:
         patch["options"] = [x.strip() for x in patch["options"]]
     row = existing.model_copy(update={**patch, "updated_at": now, "last_updated_by": last_updated_by})

@@ -47,10 +47,9 @@ def _tx_update_product_inventory(
     p_snap = p_ref.get(transaction=transaction)
     if not p_snap.exists:
         raise ProductNotFoundError(product.id)
-    transaction.set(p_ref, product.model_dump(mode="json"))
-
     i_ref_p = db.collection(INVENTORY_COLLECTION_NAME).document(inventory_document_id(product.id))
     snap_p = i_ref_p.get(transaction=transaction)
+    transaction.set(p_ref, product.model_dump(mode="json"))
     if snap_p.exists:
         current = InventoryItem.model_validate(snap_p.to_dict())
         upd = inventory_update_dict_for_product(product, current, now)
@@ -79,13 +78,12 @@ def _tx_soft_delete_product_inventory(
     p_snap = p_ref.get(transaction=transaction)
     if not p_snap.exists:
         raise ProductNotFoundError(product_id)
+    i_ref_p = db.collection(INVENTORY_COLLECTION_NAME).document(inventory_document_id(product_id))
+    snap_p = i_ref_p.get(transaction=transaction)
     transaction.update(
         p_ref,
         {"deleted": True, "updated_at": now, "last_updated_by": last_updated_by},
     )
-
-    i_ref_p = db.collection(INVENTORY_COLLECTION_NAME).document(inventory_document_id(product_id))
-    snap_p = i_ref_p.get(transaction=transaction)
     if snap_p.exists:
         meta = snap_p.to_dict().get("metadata")
         if isinstance(meta, dict):

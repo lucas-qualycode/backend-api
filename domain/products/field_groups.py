@@ -9,7 +9,6 @@ PRODUCT_CATALOG_FIELD_NAMES = frozenset(
         "fulfillment_type",
         "fulfillment_profile_id",
         "additional_info_fields",
-        "request_additional_info",
         "metadata",
     }
 )

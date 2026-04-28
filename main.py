@@ -5,12 +5,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-_log = logging.getLogger("main")
-_log.setLevel(logging.INFO)
-if not _log.handlers:
-    _h = logging.StreamHandler(sys.stdout)
-    _h.setFormatter(logging.Formatter("%(levelname)s %(name)s %(message)s"))
-    _log.addHandler(_h)
+_fmt = logging.Formatter("%(levelname)s %(name)s %(message)s")
+
+
+def _stdout_logger(name: str) -> logging.Logger:
+    log = logging.getLogger(name)
+    log.setLevel(logging.INFO)
+    if not log.handlers:
+        h = logging.StreamHandler(sys.stdout)
+        h.setFormatter(_fmt)
+        log.addHandler(h)
+    log.propagate = False
+    return log
+
+
+_log = _stdout_logger("main")
+_stdout_logger("application")
 
 from firebase_admin import get_app, initialize_app
 from firebase_functions import https_fn, options
@@ -23,7 +33,7 @@ except ValueError:
     initialize_app()
 
 from app import app
-from triggers.payment_approval import on_payment_status_changed  # noqa: F401
+# from triggers.payment_approval import on_payment_status_changed  # noqa: F401
 
 try:
     import firebase_functions.private.serving as _serving

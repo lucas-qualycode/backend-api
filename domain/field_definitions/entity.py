@@ -19,6 +19,7 @@ class FieldDefinition(BaseModel):
     description: str | None = None
     field_type: str
     required_default: bool = False
+    format: str | None = None
     min_length: int | None = None
     max_length: int | None = None
     minimum: float | None = None

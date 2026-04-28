@@ -9,14 +9,18 @@ def validate_product_additional_info_fields_shape(
 ) -> None:
     seen: set[str] = set()
     for idx, ref in enumerate(refs):
-        field_id = getattr(ref, "field_id", None)
+        if isinstance(ref, dict):
+            field_id = ref.get("field_id")
+            order = ref.get("order")
+        else:
+            field_id = getattr(ref, "field_id", None)
+            order = getattr(ref, "order", None)
         if not isinstance(field_id, str) or not field_id.strip():
             raise ValidationError(f"additional_info_fields[{idx}].field_id is required")
         fid = field_id.strip()
         if fid in seen:
             raise ValidationError(f"additional_info_fields has duplicate field_id: {fid}")
         seen.add(fid)
-        order = getattr(ref, "order", None)
         if order is not None and order < 0:
             raise ValidationError(f"additional_info_fields[{idx}].order must be >= 0")
 

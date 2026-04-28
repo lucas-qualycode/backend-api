@@ -21,7 +21,6 @@ def create_product(
     validate_product_create(data)
     validate_product_additional_info_fields_shape(data.additional_info_fields)
     value = 0 if data.is_free else data.value
-    has_additional = len(data.additional_info_fields) > 0
     product = Product(
         id=str(uuid.uuid4()),
         name=data.name.strip(),
@@ -37,7 +36,6 @@ def create_product(
         value=value,
         quantity=data.quantity,
         max_per_user=data.max_per_user,
-        request_additional_info=has_additional,
         additional_info_fields=data.additional_info_fields,
         active=data.active,
         deleted=False,

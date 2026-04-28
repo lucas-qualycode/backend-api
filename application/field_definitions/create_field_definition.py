@@ -20,6 +20,7 @@ def create_field_definition(
         description=data.description.strip() if data.description and data.description.strip() else None,
         field_type=data.field_type,
         required_default=data.required_default,
+        format=data.format,
         min_length=data.min_length,
         max_length=data.max_length,
         minimum=data.minimum,

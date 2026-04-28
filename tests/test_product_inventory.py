@@ -43,7 +43,6 @@ def test_new_inventory_item_for_product() -> None:
         value=1000,
         quantity=50,
         max_per_user=5,
-        request_additional_info=False,
         additional_info_fields=[],
         active=True,
         deleted=False,
@@ -75,7 +74,6 @@ def test_inventory_update_respects_reserved() -> None:
         value=100,
         quantity=10,
         max_per_user=1,
-        request_additional_info=False,
         additional_info_fields=[],
         active=True,
         deleted=False,
@@ -117,7 +115,6 @@ def test_inventory_update_reserved_exceeds_new_total() -> None:
         value=100,
         quantity=5,
         max_per_user=1,
-        request_additional_info=False,
         additional_info_fields=[],
         active=True,
         deleted=False,
@@ -160,7 +157,6 @@ def test_validate_product_create_free() -> None:
             value=0,
             quantity=1,
             max_per_user=1,
-            request_additional_info=False,
         )
     )
 
@@ -174,7 +170,6 @@ def test_validate_product_create_paid() -> None:
             value=100,
             quantity=2,
             max_per_user=2,
-            request_additional_info=False,
         )
     )
 
@@ -189,7 +184,6 @@ def test_validate_product_create_rejects_free_with_value() -> None:
                 value=10,
                 quantity=1,
                 max_per_user=1,
-                request_additional_info=False,
             )
         )
 
@@ -207,7 +201,6 @@ def test_validate_product_state() -> None:
         value=1,
         quantity=1,
         max_per_user=1,
-        request_additional_info=False,
         active=True,
         deleted=False,
         created_at="t",

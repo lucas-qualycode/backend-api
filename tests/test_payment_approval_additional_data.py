@@ -47,7 +47,6 @@ def _product() -> Product:
         value=500,
         quantity=10,
         max_per_user=2,
-        request_additional_info=True,
         additional_info_fields=[],
         active=True,
         deleted=False,

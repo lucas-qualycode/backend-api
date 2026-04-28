@@ -5,6 +5,18 @@ from application.field_definitions.schemas import (
 from domain.field_definitions.entity import FieldDefinition, FieldType
 from utils.errors import ValidationError
 
+SUPPORTED_TEXT_FORMATS = {
+    "cpf",
+    "rg",
+    "email",
+    "phone",
+    "url",
+    "time_iso",
+    "date_iso",
+    "datetime_iso",
+}
+STRICT_TEMPORAL_TEXT_FORMATS = {"time_iso", "date_iso", "datetime_iso"}
+
 
 def validate_field_definition_create(data: CreateFieldDefinitionInput) -> None:
     if not data.key or not data.key.strip():
@@ -13,6 +25,7 @@ def validate_field_definition_create(data: CreateFieldDefinitionInput) -> None:
         raise ValidationError("label is required")
     _validate_type_and_rules(
         field_type=data.field_type,
+        field_format=data.format,
         min_length=data.min_length,
         max_length=data.max_length,
         minimum=data.minimum,
@@ -28,6 +41,7 @@ def validate_field_definition_update(data: UpdateFieldDefinitionInput) -> None:
         raise ValidationError("label cannot be empty")
     if (
         data.field_type is not None
+        or data.format is not None
         or data.min_length is not None
         or data.max_length is not None
         or data.minimum is not None
@@ -36,6 +50,7 @@ def validate_field_definition_update(data: UpdateFieldDefinitionInput) -> None:
     ):
         _validate_type_and_rules(
             field_type=data.field_type,
+            field_format=data.format,
             min_length=data.min_length,
             max_length=data.max_length,
             minimum=data.minimum,
@@ -47,6 +62,7 @@ def validate_field_definition_update(data: UpdateFieldDefinitionInput) -> None:
 def validate_field_definition_state(row: FieldDefinition) -> None:
     _validate_type_and_rules(
         field_type=row.field_type,
+        field_format=row.format,
         min_length=row.min_length,
         max_length=row.max_length,
         minimum=row.minimum,
@@ -58,6 +74,7 @@ def validate_field_definition_state(row: FieldDefinition) -> None:
 def _validate_type_and_rules(
     *,
     field_type: str | None,
+    field_format: str | None,
     min_length: int | None,
     max_length: int | None,
     minimum: float | None,
@@ -85,11 +102,23 @@ def _validate_type_and_rules(
     elif options:
         raise ValidationError("options are only allowed for select field_type")
     if field_type == FieldType.TEXT:
+        if field_format is not None and field_format not in SUPPORTED_TEXT_FORMATS:
+            raise ValidationError(f"format must be one of: {', '.join(sorted(SUPPORTED_TEXT_FORMATS))}")
+        if field_format in STRICT_TEMPORAL_TEXT_FORMATS and (
+            min_length is not None or max_length is not None
+        ):
+            raise ValidationError("min_length/max_length are not allowed for temporal text formats")
         if minimum is not None or maximum is not None:
             raise ValidationError("minimum/maximum are not allowed for text field_type")
     elif field_type == FieldType.NUMBER:
+        if field_format is not None:
+            raise ValidationError("format is only allowed for text field_type")
         if min_length is not None or max_length is not None:
             raise ValidationError("min_length/max_length are not allowed for number field_type")
     elif field_type == FieldType.BOOLEAN:
+        if field_format is not None:
+            raise ValidationError("format is only allowed for text field_type")
         if any(x is not None for x in (min_length, max_length, minimum, maximum)):
             raise ValidationError("boolean field_type cannot have min/max/length rules")
+    elif field_type == FieldType.SELECT and field_format is not None:
+        raise ValidationError("format is only allowed for text field_type")

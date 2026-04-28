@@ -1,3 +1,6 @@
+from datetime import date, time
+from urllib.parse import urlparse
+
 from application.orders.schemas import OrderItemInput
 from domain.field_definitions.entity import FieldType
 from domain.field_definitions.exceptions import FieldDefinitionNotFoundError
@@ -65,6 +68,7 @@ def _resolve_effective_fields(refs: list, field_repo: FieldDefinitionRepository)
                 "key": key,
                 "field_type": row.field_type,
                 "required": ref.required if ref.required is not None else row.required_default,
+                "format": row.format,
                 "min_length": row.min_length,
                 "max_length": row.max_length,
                 "minimum": row.minimum,
@@ -98,6 +102,7 @@ def _validate_value(key: str, value: object, field: dict) -> None:
             raise ValidationError(f"Field {key} below min_length")
         if max_length is not None and len(value) > max_length:
             raise ValidationError(f"Field {key} exceeds max_length")
+        _validate_text_format(key, value, field.get("format"))
         return
     if ft == FieldType.NUMBER:
         if not isinstance(value, (int, float)) or isinstance(value, bool):
@@ -121,3 +126,44 @@ def _validate_value(key: str, value: object, field: dict) -> None:
             raise ValidationError(f"Field {key} must be one of the allowed values")
         return
     raise ValidationError(f"Unsupported field_type for key {key}")
+
+
+def _validate_text_format(key: str, value: str, field_format: str | None) -> None:
+    if field_format is None:
+        return
+    if field_format == "email":
+        if value.count("@") != 1:
+            raise ValidationError(f"Field {key} must be a valid email")
+        local, domain = value.split("@")
+        if not local or not domain or "." not in domain or domain.startswith(".") or domain.endswith("."):
+            raise ValidationError(f"Field {key} must be a valid email")
+        return
+    if field_format == "url":
+        parsed = urlparse(value)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValidationError(f"Field {key} must be a valid URL")
+        return
+    if field_format == "date_iso":
+        try:
+            date.fromisoformat(value)
+        except ValueError as e:
+            raise ValidationError(f"Field {key} must be a valid ISO date (YYYY-MM-DD)") from e
+        return
+    if field_format == "time_iso":
+        try:
+            time.fromisoformat(value)
+        except ValueError as e:
+            raise ValidationError(f"Field {key} must be a valid ISO time (HH:MM[:SS])") from e
+        return
+    if field_format == "datetime_iso":
+        try:
+            _parse_iso_datetime(value)
+        except ValueError as e:
+            raise ValidationError(f"Field {key} must be a valid ISO datetime") from e
+        return
+
+
+def _parse_iso_datetime(value: str) -> None:
+    from datetime import datetime
+
+    datetime.fromisoformat(value.replace("Z", "+00:00"))
