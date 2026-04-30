@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from domain.invitations.entity import Invitation, InvitationQueryParams
+from domain.invitations.entity import Invitation, InvitationQueryParams, InvitationStatus
 
 
 class InvitationRepository(ABC):
@@ -21,5 +21,5 @@ class InvitationRepository(ABC):
         ...
 
     @abstractmethod
-    def update_status(self, id: str, status: str, metadata: dict | None) -> Invitation | None:
+    def update_status(self, id: str, status: InvitationStatus, metadata: dict | None) -> Invitation | None:
         ...

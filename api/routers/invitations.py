@@ -4,7 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from api.auth import CurrentUser, get_current_user, get_optional_user
-from api.deps import get_invitation_repository, get_tag_repository, get_tagging_repository
+from api.deps import (
+    get_db,
+    get_invitation_guest_slot_repository,
+    get_invitation_repository,
+    get_product_repository,
+    get_tag_repository,
+    get_tagging_repository,
+)
 from application.invitations import (
     create_invitation,
     get_invitation,
@@ -14,7 +21,7 @@ from application.invitations import (
 )
 from application.invitations.schemas import CreateInvitationInput, UpdateInvitationInput
 from application.taggings import embed_tags_on_invitation, validate_tag_ids_for_entity
-from domain.invitations.entity import InvitationQueryParams
+from domain.invitations.entity import InvitationQueryParams, InvitationStatus
 from domain.invitations.exceptions import InvitationNotFoundError
 from domain.taggings.entity import TaggingEntityType
 from infrastructure.persistence.firestore_common import get_timestamp
@@ -24,7 +31,7 @@ router = APIRouter(prefix="/invitations", tags=["invitations"])
 
 
 class UpdateInvitationStatusBody(BaseModel):
-    status: str
+    status: InvitationStatus
     metadata: dict[str, Any] | None = None
 
 
@@ -57,12 +64,16 @@ def get_invitation_endpoint(
     id: str,
     current_user: CurrentUser | None = Depends(get_optional_user),
     repo=Depends(get_invitation_repository),
+    guest_slot_repo=Depends(get_invitation_guest_slot_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
 ):
     try:
         invitation = get_invitation(repo, id)
-        return embed_tags_on_invitation(invitation, tagging_repo, tag_repo)
+        out = embed_tags_on_invitation(invitation, tagging_repo, tag_repo)
+        slots = guest_slot_repo.list_by_invitation_id(id)
+        out["guest_slots"] = [s.model_dump(mode="json") for s in slots]
+        return out
     except InvitationNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -71,7 +82,10 @@ def get_invitation_endpoint(
 def create_invitation_endpoint(
     data: CreateInvitationInput,
     current_user: CurrentUser = Depends(get_current_user),
+    db=Depends(get_db),
     repo=Depends(get_invitation_repository),
+    product_repo=Depends(get_product_repository),
+    guest_slot_repo=Depends(get_invitation_guest_slot_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
 ):
@@ -85,7 +99,7 @@ def create_invitation_endpoint(
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=e.message)
     now = get_timestamp()
-    invitation = create_invitation(repo, data, now)
+    invitation = create_invitation(db, repo, product_repo, data, now)
     tagging_repo.replace_all_for_entity(
         TaggingEntityType.INVITATION,
         invitation.id,
@@ -93,7 +107,11 @@ def create_invitation_endpoint(
         current_user.uid,
         now,
     )
-    return embed_tags_on_invitation(invitation, tagging_repo, tag_repo)
+    out = embed_tags_on_invitation(invitation, tagging_repo, tag_repo)
+    if invitation.guest_slot_count:
+        slots = guest_slot_repo.list_by_invitation_id(invitation.id)
+        out["guest_slots"] = [s.model_dump(mode="json") for s in slots]
+    return out
 
 
 @router.put("/{id}")
@@ -102,13 +120,21 @@ def update_invitation_endpoint(
     id: str,
     data: UpdateInvitationInput,
     current_user: CurrentUser = Depends(get_current_user),
+    db=Depends(get_db),
     repo=Depends(get_invitation_repository),
+    product_repo=Depends(get_product_repository),
+    guest_slot_repo=Depends(get_invitation_guest_slot_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
 ):
     try:
+        prior = get_invitation(repo, id)
+        if prior.inviter_id != current_user.uid:
+            raise HTTPException(status_code=403, detail="Forbidden")
         now = get_timestamp()
-        invitation = update_invitation(repo, id, data, now)
+        invitation = update_invitation(
+            db, repo, product_repo, id, data, now
+        )
         if data.tag_ids is not None:
             try:
                 validate_tag_ids_for_entity(
@@ -126,7 +152,11 @@ def update_invitation_endpoint(
                 current_user.uid,
                 now,
             )
-        return embed_tags_on_invitation(invitation, tagging_repo, tag_repo)
+        out = embed_tags_on_invitation(invitation, tagging_repo, tag_repo)
+        slots = guest_slot_repo.list_by_invitation_id(invitation.id)
+        if slots:
+            out["guest_slots"] = [s.model_dump(mode="json") for s in slots]
+        return out
     except InvitationNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

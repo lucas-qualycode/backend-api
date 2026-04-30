@@ -7,6 +7,7 @@ from application.user_products.schemas import CreateUserProductInput
 from domain.orders.repository import OrderRepository
 from domain.payments.repository import PaymentRepository
 from domain.products.repository import ProductRepository
+from domain.invitations.entity import InvitationStatus
 from domain.invitations.repository import InvitationRepository
 from domain.user_products.repository import UserProductRepository
 
@@ -69,11 +70,17 @@ def process_payment_approval(
     invitation_id = (order.metadata or {}).get("invitation_id") if order.metadata else None
     if invitation_id:
         invitation = invitation_repo.get_by_id(invitation_id)
-        if invitation and invitation.status != "ACCEPTED":
-            if invitation.status == "DECLINED":
+        if invitation and invitation.status != InvitationStatus.ACCEPTED:
+            if invitation.status == InvitationStatus.DECLINED:
                 log.warning("Invitation %s is DECLINED, not updating to ACCEPTED", invitation_id)
             else:
                 merged_metadata = {**(invitation.metadata or {}), "order_id": order.id, "payment_id": payment_id}
                 if order.metadata and order.metadata.get("message") is not None:
                     merged_metadata["message"] = order.metadata["message"]
-                update_invitation_status(invitation_repo, invitation_id, "ACCEPTED", merged_metadata)
+                update_invitation_status(
+                    invitation_repo,
+                    invitation_id,
+                    InvitationStatus.ACCEPTED,
+                    merged_metadata,
+                    validate_transition=False,
+                )

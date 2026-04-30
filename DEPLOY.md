@@ -5,7 +5,7 @@
 - **Firebase CLI** (`npm i -g firebase-tools` or use `npx firebase`).
 - **`firebase login`** with an account that can deploy to the project in [`.firebaserc`](.firebaserc) (default: `partiiu-app`).
 - **Blaze (pay-as-you-go)** on the Firebase project. Cloud Functions (2nd gen) need Cloud Build and Artifact Registry; Firebase will prompt to upgrade if the project is on Spark only. Upgrade: [Firebase usage / billing](https://console.firebase.google.com/project/partiiu-app/usage/details).
-
+s
 ## Deploy
 
 From this directory:

@@ -1,6 +1,8 @@
 from typing import Any
 
-from domain.invitations.entity import Invitation, InvitationQueryParams
+from google.cloud.firestore import DELETE_FIELD
+
+from domain.invitations.entity import Invitation, InvitationQueryParams, InvitationStatus
 from domain.invitations.repository import InvitationRepository
 from infrastructure.config import INVITATIONS_COLLECTION_NAME
 from infrastructure.persistence.firestore_common import apply_filters, get_timestamp
@@ -35,12 +37,14 @@ class FirestoreInvitationRepository(InvitationRepository):
         return [Invitation.model_validate(d.to_dict()) for d in snapshot]
 
     def update(self, id: str, invitation: Invitation) -> Invitation:
-        self._coll.document(id).update(self._dump(invitation))
+        payload = self._dump(invitation)
+        payload["group_id"] = DELETE_FIELD
+        self._coll.document(id).update(payload)
         return invitation
 
-    def update_status(self, id: str, status: str, metadata: dict | None) -> Invitation | None:
+    def update_status(self, id: str, status: InvitationStatus, metadata: dict | None) -> Invitation | None:
         ref = self._coll.document(id)
         if not ref.get().exists:
             return None
-        ref.update({"status": status, "updated_at": get_timestamp(), "metadata": metadata or {}})
+        ref.update({"status": status.value, "updated_at": get_timestamp(), "metadata": metadata or {}})
         return self.get_by_id(id)

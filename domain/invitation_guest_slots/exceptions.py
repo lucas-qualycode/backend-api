@@ -1,0 +1,2 @@
+class InvitationGuestSlotNotFoundError(Exception):
+    pass

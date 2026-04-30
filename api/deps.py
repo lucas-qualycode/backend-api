@@ -12,6 +12,9 @@ from infrastructure.persistence.firestore_events import FirestoreEventRepository
 from infrastructure.persistence.firestore_taggings import FirestoreTaggingRepository
 from infrastructure.persistence.firestore_tags import FirestoreTagRepository
 from infrastructure.persistence.firestore_locations import FirestoreLocationRepository
+from infrastructure.persistence.firestore_invitation_guest_slots import (
+    FirestoreInvitationGuestSlotRepository,
+)
 from infrastructure.persistence.firestore_invitations import FirestoreInvitationRepository
 from infrastructure.persistence.firestore_inventory import FirestoreInventoryRepository
 from infrastructure.persistence.firestore_orders import FirestoreOrderRepository
@@ -53,6 +56,12 @@ def get_schedule_repository(db: Any = Depends(get_db)) -> FirestoreScheduleRepos
 
 def get_invitation_repository(db: Any = Depends(get_db)) -> FirestoreInvitationRepository:
     return FirestoreInvitationRepository(db)
+
+
+def get_invitation_guest_slot_repository(
+    db: Any = Depends(get_db),
+) -> FirestoreInvitationGuestSlotRepository:
+    return FirestoreInvitationGuestSlotRepository(db)
 
 
 def get_attendee_repository(db: Any = Depends(get_db)) -> FirestoreAttendeeRepository:
