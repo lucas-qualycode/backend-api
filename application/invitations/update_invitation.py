@@ -6,6 +6,7 @@ from application.invitations.schemas import CreateInvitationGuestSlotInput, Upda
 from application.invitations.validate_guest_slots import validate_guest_slots_for_create
 from application.invitations.validate_invitation_ticket import validate_invitation_ticket_for_event
 from domain.invitation_guest_slots.entity import InvitationGuestSlot, InvitationGuestSlotStatus
+from domain.invitations.entity import Invitation
 from domain.invitations.exceptions import InvitationNotFoundError
 from domain.invitations.repository import InvitationRepository
 from domain.products.repository import ProductRepository
