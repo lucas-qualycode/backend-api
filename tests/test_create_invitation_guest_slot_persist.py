@@ -57,7 +57,8 @@ def test_create_invitation_persists_only_filled_guest_rows(mock_tx: MagicMock) -
             {"first_name": "", "required_field_ids": []},
         ],
     )
-    invitation = create_invitation(db, repo, product_repo, data, "now")
+    field_def_repo = MagicMock()
+    invitation = create_invitation(db, repo, product_repo, field_def_repo, data, "now")
     mock_tx.assert_called_once()
     passed_inv, slots = mock_tx.call_args[0][1], mock_tx.call_args[0][2]
     assert invitation.guest_slot_count == 3
@@ -77,5 +78,6 @@ def test_validate_rejects_all_empty_rows_when_exceeding_slot_count_via_row_lengt
         CreateInvitationGuestSlotInput(first_name="", required_field_ids=[]),
         CreateInvitationGuestSlotInput(first_name="", required_field_ids=[]),
     ]
+    field_repo = MagicMock()
     with pytest.raises(ValidationError, match="Too many guest detail rows"):
-        validate_guest_slots_for_create(repo, "t1", 2, guests)
+        validate_guest_slots_for_create(repo, field_repo, "t1", 2, guests)

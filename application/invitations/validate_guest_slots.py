@@ -1,4 +1,5 @@
 from application.invitations.schemas import CreateInvitationGuestSlotInput
+from domain.field_definitions.repository import FieldDefinitionRepository
 from domain.products.entity import Product
 from domain.products.repository import ProductRepository
 from utils.errors import ValidationError
@@ -15,6 +16,7 @@ def _allowed_field_ids_for_ticket(product: Product) -> set[str]:
 
 def validate_guest_slots_for_create(
     product_repo: ProductRepository,
+    field_def_repo: FieldDefinitionRepository,
     ticket_id: str | None,
     guest_slot_count: int,
     guests: list[CreateInvitationGuestSlotInput],
@@ -46,7 +48,14 @@ def validate_guest_slots_for_create(
     allowed = _allowed_field_ids_for_ticket(product)
     for i, g in enumerate(guests):
         for fid in g.required_field_ids:
-            if fid not in allowed:
+            if fid in allowed:
+                continue
+            row = field_def_repo.get_by_id(fid)
+            if row is None:
                 raise ValidationError(
-                    f"guests[{i}].required_field_ids contains field_id not on this ticket: {fid}"
+                    f"guests[{i}].required_field_ids contains unknown field_id: {fid}"
+                )
+            if row.deleted or not row.active:
+                raise ValidationError(
+                    f"guests[{i}].required_field_ids references inactive or deleted field: {fid}"
                 )

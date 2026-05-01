@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from api.auth import CurrentUser, get_current_user, get_optional_user
 from api.deps import (
     get_db,
+    get_field_definition_repository,
     get_invitation_guest_slot_repository,
     get_invitation_repository,
     get_product_repository,
@@ -45,6 +46,7 @@ def list_invitations_endpoint(
     limit: int | None = None,
     offset: int | None = None,
     repo=Depends(get_invitation_repository),
+    guest_slot_repo=Depends(get_invitation_guest_slot_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
 ):
@@ -56,7 +58,9 @@ def list_invitations_endpoint(
         offset=offset,
         tag_id=tag_id,
     )
-    return list_invitations_as_dicts(repo, tagging_repo, tag_repo, params)
+    return list_invitations_as_dicts(
+        repo, tagging_repo, tag_repo, guest_slot_repo, params
+    )
 
 
 @router.get("/{id}")
@@ -85,6 +89,7 @@ def create_invitation_endpoint(
     db=Depends(get_db),
     repo=Depends(get_invitation_repository),
     product_repo=Depends(get_product_repository),
+    field_def_repo=Depends(get_field_definition_repository),
     guest_slot_repo=Depends(get_invitation_guest_slot_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
@@ -99,7 +104,7 @@ def create_invitation_endpoint(
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=e.message)
     now = get_timestamp()
-    invitation = create_invitation(db, repo, product_repo, data, now)
+    invitation = create_invitation(db, repo, product_repo, field_def_repo, data, now)
     tagging_repo.replace_all_for_entity(
         TaggingEntityType.INVITATION,
         invitation.id,
@@ -123,6 +128,7 @@ def update_invitation_endpoint(
     db=Depends(get_db),
     repo=Depends(get_invitation_repository),
     product_repo=Depends(get_product_repository),
+    field_def_repo=Depends(get_field_definition_repository),
     guest_slot_repo=Depends(get_invitation_guest_slot_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
@@ -133,7 +139,7 @@ def update_invitation_endpoint(
             raise HTTPException(status_code=403, detail="Forbidden")
         now = get_timestamp()
         invitation = update_invitation(
-            db, repo, product_repo, id, data, now
+            db, repo, product_repo, field_def_repo, id, data, now
         )
         if data.tag_ids is not None:
             try:

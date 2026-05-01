@@ -1,4 +1,5 @@
 from application.taggings.embed import embed_tags_on_invitations
+from domain.invitation_guest_slots.repository import InvitationGuestSlotRepository
 from domain.invitations.entity import Invitation, InvitationQueryParams
 from domain.invitations.repository import InvitationRepository
 from domain.tags.repository import TagRepository
@@ -23,10 +24,21 @@ def list_invitations(
     return repo.list(_params_without_tag_filter(query_params))
 
 
+def _attach_guest_slots(rows: list[dict], guest_slot_repo: InvitationGuestSlotRepository) -> None:
+    for d in rows:
+        n = d.get("guest_slot_count") or 0
+        if n > 0:
+            slots = guest_slot_repo.list_by_invitation_id(str(d["id"]))
+            d["guest_slots"] = [s.model_dump(mode="json") for s in slots]
+        else:
+            d["guest_slots"] = []
+
+
 def list_invitations_as_dicts(
     invitation_repo: InvitationRepository,
     tagging_repo: TaggingRepository,
     tag_repo: TagRepository,
+    guest_slot_repo: InvitationGuestSlotRepository,
     query_params: InvitationQueryParams,
 ) -> list[dict]:
     if query_params.tag_id:
@@ -48,6 +60,10 @@ def list_invitations_as_dicts(
             if query_params.status is not None and inv.status != query_params.status:
                 continue
             invitations.append(inv)
-        return embed_tags_on_invitations(invitations, tagging_repo, tag_repo)
+        rows = embed_tags_on_invitations(invitations, tagging_repo, tag_repo)
+        _attach_guest_slots(rows, guest_slot_repo)
+        return rows
     raw = invitation_repo.list(_params_without_tag_filter(query_params))
-    return embed_tags_on_invitations(raw, tagging_repo, tag_repo)
+    rows = embed_tags_on_invitations(raw, tagging_repo, tag_repo)
+    _attach_guest_slots(rows, guest_slot_repo)
+    return rows

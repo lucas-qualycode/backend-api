@@ -8,6 +8,7 @@ from application.invitations.validate_invitation_ticket import validate_invitati
 from domain.invitation_guest_slots.entity import InvitationGuestSlot, InvitationGuestSlotStatus
 from domain.invitations.entity import Invitation
 from domain.invitations.exceptions import InvitationNotFoundError
+from domain.field_definitions.repository import FieldDefinitionRepository
 from domain.invitations.repository import InvitationRepository
 from domain.products.repository import ProductRepository
 
@@ -20,6 +21,7 @@ def update_invitation(
     db: Any,
     repo: InvitationRepository,
     product_repo: ProductRepository,
+    field_def_repo: FieldDefinitionRepository,
     invitation_id: str,
     data: UpdateInvitationInput,
     updated_at: str,
@@ -46,7 +48,9 @@ def update_invitation(
             else existing.guest_slot_count
         )
         patch["guest_slot_count"] = total_slots
-        validate_guest_slots_for_create(product_repo, next_ticket_id, total_slots, guests_in)
+        validate_guest_slots_for_create(
+            product_repo, field_def_repo, next_ticket_id, total_slots, guests_in
+        )
         filled_guests = [g for g in guests_in if _guest_input_has_content(g)]
         slot_entities: list[InvitationGuestSlot] = []
         for g in filled_guests:

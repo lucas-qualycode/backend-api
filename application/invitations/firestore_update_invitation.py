@@ -25,9 +25,10 @@ def _tx_update_invitation_guest_slots(
     slots: list[InvitationGuestSlot],
 ) -> None:
     inv_ref = db.collection(INVITATIONS_COLLECTION_NAME).document(invitation_id)
-    transaction.update(inv_ref, _invitation_update_payload(invitation))
     sub = inv_ref.collection(INVITATION_GUEST_SLOTS_COLLECTION_NAME)
-    for doc in sub.get(transaction=transaction):
+    existing_docs = list(sub.get(transaction=transaction))
+    transaction.update(inv_ref, _invitation_update_payload(invitation))
+    for doc in existing_docs:
         transaction.delete(doc.reference)
     for s in slots:
         transaction.set(sub.document(s.id), s.model_dump(mode="json"))
