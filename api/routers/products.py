@@ -4,6 +4,7 @@ from api.auth import CurrentUser, RequireOrganizer
 from api.deps import (
     get_db,
     get_inventory_repository,
+    get_invitation_repository,
     get_product_repository,
     get_tag_repository,
     get_tagging_repository,
@@ -19,7 +20,7 @@ from application.products.embed_inventory import embed_inventory_on_one_product_
 from application.products.schemas import CreateProductInput, UpdateProductInput
 from application.taggings import embed_tags_on_product, validate_tag_ids_for_entity
 from domain.products.entity import ProductQueryParams
-from domain.products.exceptions import ProductNotFoundError
+from domain.products.exceptions import ProductDeleteBlockedError, ProductNotFoundError
 from domain.products.types import ProductType
 from domain.taggings.entity import TaggingEntityType
 from infrastructure.persistence.firestore_common import get_timestamp
@@ -157,9 +158,14 @@ def delete_product_endpoint(
     db=Depends(get_db),
     repo=Depends(get_product_repository),
     tagging_repo=Depends(get_tagging_repository),
+    invitation_repo=Depends(get_invitation_repository),
 ):
     try:
         now = get_timestamp()
-        delete_product(db, repo, tagging_repo, id, current_user.uid, now)
+        delete_product(
+            db, repo, tagging_repo, invitation_repo, id, current_user.uid, now
+        )
     except ProductNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except ProductDeleteBlockedError as e:
+        raise HTTPException(status_code=409, detail=e.reason_code)

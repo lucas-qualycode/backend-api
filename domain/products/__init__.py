@@ -1,5 +1,5 @@
 from domain.products.entity import Product, ProductQueryParams
-from domain.products.exceptions import ProductNotFoundError
+from domain.products.exceptions import ProductDeleteBlockedError, ProductNotFoundError
 from domain.products.field_groups import (
     PRODUCT_CATALOG_FIELD_NAMES,
     PRODUCT_COMMERCE_FIELD_NAMES,
@@ -18,6 +18,7 @@ __all__ = [
     "Product",
     "ProductQueryParams",
     "ProductNotFoundError",
+    "ProductDeleteBlockedError",
     "ProductRepository",
     "ProductType",
     "FulfillmentType",

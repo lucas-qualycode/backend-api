@@ -39,6 +39,7 @@ class Invitation(BaseModel):
 class InvitationQueryParams(BaseModel):
     event_id: str | None = None
     inviter_id: str | None = None
+    ticket_id: str | None = None
     status: InvitationStatus | None = None
     limit: int | None = None
     offset: int | None = None
@@ -47,5 +48,6 @@ class InvitationQueryParams(BaseModel):
     FILTER_SPEC: ClassVar[list[tuple[str, str, str]]] = [
         ("event_id", "event_id", "=="),
         ("inviter_id", "inviter_id", "=="),
+        ("ticket_id", "ticket_id", "=="),
         ("status", "status", "=="),
     ]

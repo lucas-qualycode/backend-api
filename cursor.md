@@ -158,6 +158,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | GET | `/invitations/{id}` | optional user (public or authenticated) |
 | POST | `/invitations` | organizer |
 | PUT/PATCH | `/invitations/{id}` | organizer |
+| DELETE | `/invitations/{id}` | organizer |
 | POST | `/invitations/{id}/status` | organizer |
 | **Field definitions** (`prefix=/field-definitions`) | | |
 | GET | `/field-definitions` | none (query: active, deleted, field_type, limit, offset) |
@@ -169,7 +170,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | GET | `/products/{id}` | none |
 | POST | `/products` | organizer |
 | PUT/PATCH | `/products/{id}` | organizer |
-| DELETE | `/products/{id}` | organizer |
+| DELETE | `/products/{id}` | organizer; **409** with detail `PRODUCT_HAS_INVITATIONS` if any invitation uses this product as `ticket_id` |
 | **User products** (`prefix=/user-products`) | | |
 | GET | `/user-products` | user |
 | GET | `/user-products/{id}` | user |

@@ -23,3 +23,7 @@ class InvitationRepository(ABC):
     @abstractmethod
     def update_status(self, id: str, status: InvitationStatus, metadata: dict | None) -> Invitation | None:
         ...
+
+    @abstractmethod
+    def delete_by_id(self, id: str) -> None:
+        ...

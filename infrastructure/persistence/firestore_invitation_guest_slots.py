@@ -27,3 +27,16 @@ class FirestoreInvitationGuestSlotRepository(InvitationGuestSlotRepository):
         snapshot = self._sub(invitation_id).get()
         rows = [InvitationGuestSlot.model_validate(d.to_dict()) for d in snapshot]
         return sorted(rows, key=lambda s: (s.created_at, s.id))
+
+    def delete_all_for_invitation(self, invitation_id: str) -> None:
+        batch = self._db.batch()
+        n = 0
+        for doc in self._sub(invitation_id).stream():
+            batch.delete(doc.reference)
+            n += 1
+            if n >= 450:
+                batch.commit()
+                batch = self._db.batch()
+                n = 0
+        if n:
+            batch.commit()

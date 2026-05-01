@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 
 from api.auth import CurrentUser, get_current_user, get_optional_user
@@ -15,6 +15,7 @@ from api.deps import (
 )
 from application.invitations import (
     create_invitation,
+    delete_invitation,
     get_invitation,
     list_invitations_as_dicts,
     update_invitation,
@@ -163,6 +164,24 @@ def update_invitation_endpoint(
         if slots:
             out["guest_slots"] = [s.model_dump(mode="json") for s in slots]
         return out
+    except InvitationNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.delete("/{id}", status_code=204)
+def delete_invitation_endpoint(
+    id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    repo=Depends(get_invitation_repository),
+    guest_slot_repo=Depends(get_invitation_guest_slot_repository),
+    tagging_repo=Depends(get_tagging_repository),
+):
+    try:
+        prior = get_invitation(repo, id)
+        if prior.inviter_id != current_user.uid:
+            raise HTTPException(status_code=403, detail="Forbidden")
+        delete_invitation(guest_slot_repo, tagging_repo, repo, id)
+        return Response(status_code=204)
     except InvitationNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

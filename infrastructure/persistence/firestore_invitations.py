@@ -48,3 +48,6 @@ class FirestoreInvitationRepository(InvitationRepository):
             return None
         ref.update({"status": status.value, "updated_at": get_timestamp(), "metadata": metadata or {}})
         return self.get_by_id(id)
+
+    def delete_by_id(self, id: str) -> None:
+        self._coll.document(id).delete()
