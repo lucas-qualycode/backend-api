@@ -36,14 +36,6 @@ def test_sent_to_created_rejected() -> None:
         validate_invitation_status_transition(InvitationStatus.SENT, InvitationStatus.CREATED)
 
 
-def test_expired_to_created() -> None:
-    validate_invitation_status_transition(InvitationStatus.EXPIRED, InvitationStatus.CREATED)
-
-
-def test_expired_to_sent() -> None:
-    validate_invitation_status_transition(InvitationStatus.EXPIRED, InvitationStatus.SENT)
-
-
 def test_declined_to_any_rejected() -> None:
     with pytest.raises(ValidationError, match="Invalid invitation status transition"):
         validate_invitation_status_transition(InvitationStatus.DECLINED, InvitationStatus.SENT)

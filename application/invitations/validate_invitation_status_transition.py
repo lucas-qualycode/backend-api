@@ -4,7 +4,6 @@ from utils.errors import ValidationError
 _SENT_NEXT = frozenset({
     InvitationStatus.ACCEPTED,
     InvitationStatus.DECLINED,
-    InvitationStatus.EXPIRED,
     InvitationStatus.CANCELLED,
 })
 
@@ -13,7 +12,6 @@ _ALLOWED: dict[InvitationStatus, frozenset[InvitationStatus]] = {
     InvitationStatus.SENT: _SENT_NEXT,
     InvitationStatus.ACCEPTED: frozenset({InvitationStatus.CANCELLED}),
     InvitationStatus.DECLINED: frozenset(),
-    InvitationStatus.EXPIRED: frozenset({InvitationStatus.SENT}),
     InvitationStatus.CANCELLED: frozenset(),
 }
 

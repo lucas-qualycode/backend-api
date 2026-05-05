@@ -9,7 +9,6 @@ class InvitationStatus(StrEnum):
     SENT = "SENT"
     ACCEPTED = "ACCEPTED"
     DECLINED = "DECLINED"
-    EXPIRED = "EXPIRED"
     CANCELLED = "CANCELLED"
 
 

@@ -124,6 +124,14 @@ def test_validate_rejects_guest_slot_count_without_ticket():
         validate_guest_slots_for_create(repo, field_repo, None, 2, [])
 
 
+def test_validate_rejects_zero_guest_slots_with_ticket():
+    p = _ticket_with_fields("e1", ["f_full"], max_per_user=3)
+    repo = _ProductRepo({"t1": p})
+    field_repo = _FieldDefRepo()
+    with pytest.raises(ValidationError, match="at least 1"):
+        validate_guest_slots_for_create(repo, field_repo, "t1", 0, [])
+
+
 def test_validate_rejects_more_slots_than_ticket_max_per_user():
     p = _ticket_with_fields("e1", ["f_full"], max_per_user=1)
     repo = _ProductRepo({"t1": p})

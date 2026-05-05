@@ -34,6 +34,8 @@ def validate_guest_slots_for_create(
                 f"Too many guest detail rows ({len(guests)}); cannot exceed guest_slot_count ({guest_slot_count})."
             )
         return
+    if guest_slot_count < 1:
+        raise ValidationError("guest_slot_count must be at least 1 when a ticket is selected.")
     if len(guests) > guest_slot_count:
         raise ValidationError(
             f"Too many guest detail rows ({len(guests)}); cannot exceed guest_slot_count ({guest_slot_count})."
