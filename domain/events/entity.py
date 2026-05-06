@@ -1,6 +1,8 @@
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from pydantic import BaseModel
+
+EventVisibility = Literal["public", "private"]
 
 
 class Event(BaseModel):
@@ -11,6 +13,7 @@ class Event(BaseModel):
     active: bool
     is_paid: bool
     is_online: bool
+    visibility: EventVisibility = "public"
     imageURL: str | None = None
     deleted: bool
     created_at: str

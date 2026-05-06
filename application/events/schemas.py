@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from domain.events.entity import EventVisibility
+
 
 class CreateEventInput(BaseModel):
     name: str
@@ -8,6 +10,7 @@ class CreateEventInput(BaseModel):
     active: bool | None = None
     is_paid: bool | None = None
     is_online: bool | None = None
+    visibility: EventVisibility | None = None
     tag_ids: list[str]
     imageURL: str | None = None
 
@@ -19,5 +22,6 @@ class UpdateEventInput(BaseModel):
     active: bool | None = None
     is_paid: bool | None = None
     is_online: bool | None = None
+    visibility: EventVisibility | None = None
     tag_ids: list[str] | None = None
     imageURL: str | None = None

@@ -18,6 +18,7 @@ def create_event(
     validate_name(data.name)
     validate_url(data.imageURL, "imageURL")
     is_online = data.is_online if data.is_online is not None else False
+    visibility = data.visibility if data.visibility is not None else "public"
     location_id = resolve_location_id_for_event(
         location_repo,
         data.location_id,
@@ -32,6 +33,7 @@ def create_event(
         active=data.active if data.active is not None else True,
         is_paid=data.is_paid if data.is_paid is not None else False,
         is_online=is_online,
+        visibility=visibility,
         imageURL=data.imageURL,
         deleted=False,
         created_at=now,
