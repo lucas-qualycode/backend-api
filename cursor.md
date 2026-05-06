@@ -78,7 +78,7 @@ Standard library usage: `hmac` (constant-time token compare for guest list), `se
 ```
 backend_api/
 ├── api/                    # HTTP layer
-│   ├── auth.py             # get_current_user, get_optional_user, get_user_or_guest_list, require_roles, RequireOrganizer, RequireAdmin
+│   ├── auth.py             # get_current_user, get_user_or_guest_list, require_roles, RequireOrganizer, RequireAdmin
 │   ├── deps.py             # get_db, get_*_repository for every aggregate
 │   └── routers/            # One router per domain (see API reference below)
 ├── application/            # Use cases per aggregate (events, attendees, orders, payments, …)
@@ -116,13 +116,13 @@ backend_api/
 
 ## API reference (all endpoints)
 
-Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user** = `get_current_user`; **optional user** = `get_optional_user`; **organizer** = `RequireOrganizer`; **user or guest** = `get_user_or_guest_list`; **guest check-in** = same + if user then must be admin/organizer.
+Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user** = `get_current_user`; **organizer** = `RequireOrganizer`; **user or guest** = `get_user_or_guest_list`; **guest check-in** = same + if user then must be admin/organizer.
 
 | Method | Path | Auth |
 |--------|------|------|
 | GET | `/health` | none |
 | **Events** (`prefix=/events`) | | |
-| GET | `/events` | none |
+| GET | `/events` | none; optional filters include `primary_category` |
 | GET | `/events/{id}` | none |
 | GET | `/events/{id}/user-products` | user or guest |
 | POST | `/events/{id}/guest-list-token` | organizer |
@@ -155,7 +155,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | DELETE | `/schedules/{id}` | organizer (schedule’s event must be **owned** by caller) |
 | **Invitations** (`prefix=/invitations`) | | |
 | GET | `/invitations` | user (query: event_id, status, tag_id, limit, offset) |
-| GET | `/invitations/{id}` | optional user (public or authenticated) |
+| GET | `/invitations/{id}` | user |
 | POST | `/invitations` | organizer |
 | PUT/PATCH | `/invitations/{id}` | organizer |
 | DELETE | `/invitations/{id}` | organizer |
@@ -200,7 +200,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | PUT/PATCH | `/payments/{id}` | user |
 | PATCH | `/payments/{id}/status` | user |
 
-**Public (no auth)**: `/health`, `GET /events`, `GET /events/{id}`, `GET /tags`, `GET /tags/{id}`, `GET /products`, `GET /products/{id}`. **Optional auth**: `GET /invitations/{id}`.
+**Public (no auth)**: `/health`, `GET /events`, `GET /events/{id}`, `GET /tags`, `GET /tags/{id}`, `GET /products`, `GET /products/{id}`.
 
 ### Users (`/users`)
 
@@ -259,7 +259,7 @@ Success responses: single entity or list of entities as JSON (`model_dump(mode="
 
 ## Domain entities (reference)
 
-Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, location, active, is_paid, is_online, visibility `public` \| `private`, imageURL, deleted, created_at, updated_at, created_by, last_updated_by, guest_list_token); tags are attached via **Tagging** rows (`taggings` collection) and returned on event GET/list as embedded `tags`. **Tag** (hierarchical taxonomy: `parent_tag_id`, `applies_to`, `depth`, …); **Tagging** (id, tag_id, entity_type, entity_id, created_by, created_at). **Attendee** (id, event_id, user_id, user_product_id, invitation_id, status, check_in_time, created_at, updated_at, metadata); **UserProduct** (id, parent_id, product_id, user_id, status, quantity, price, currency, purchase_date, valid_from, valid_until, …); **Product**, **Order**, **Payment**, **Invitation**, **Stand**, **Schedule**, **User** (includes **UserPreferences** with appearance fields as above), **Address**. Query params live in the same entity file with a `FILTER_SPEC` class attribute for Firestore filters where applicable. Exceptions: `domain/<agg>/exceptions.py` (e.g. `EventNotFoundError(event_id)`).
+Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, location, active, is_paid, is_online, visibility `public` \| `private`, imageURL, optional `primary_category` controlled slug from `domain/events/primary_categories.py`, deleted, created_at, updated_at, created_by, last_updated_by, guest_list_token); tags are attached via **Tagging** rows (`taggings` collection) and returned on event GET/list as embedded `tags`. **Tag** (hierarchical taxonomy: `parent_tag_id`, `applies_to`, `depth`, …); **Tagging** (id, tag_id, entity_type, entity_id, created_by, created_at). **Attendee** (id, event_id, user_id, user_product_id, invitation_id, status, check_in_time, created_at, updated_at, metadata); **UserProduct** (id, parent_id, product_id, user_id, status, quantity, price, currency, purchase_date, valid_from, valid_until, …); **Product**, **Order**, **Payment**, **Invitation**, **Stand**, **Schedule**, **User** (includes **UserPreferences** with appearance fields as above), **Address**. Query params live in the same entity file with a `FILTER_SPEC` class attribute for Firestore filters where applicable. Exceptions: `domain/<agg>/exceptions.py` (e.g. `EventNotFoundError(event_id)`).
 
 ---
 

@@ -1,4 +1,6 @@
 import re
+
+from domain.events.primary_categories import ALLOWED_EVENT_PRIMARY_CATEGORIES
 from utils.errors import ValidationError
 
 NAME_MAX_LENGTH = 256
@@ -38,3 +40,13 @@ def validate_country_code(value: str | None) -> None:
         return
     if len(value) != 2 or not value.isalpha():
         raise ValidationError("country must be a 2-letter ISO 3166-1 alpha-2 code")
+
+
+def validate_primary_category(value: str | None) -> None:
+    if value is None:
+        return
+    s = value.strip()
+    if not s:
+        raise ValidationError("primary_category must not be empty when provided")
+    if s not in ALLOWED_EVENT_PRIMARY_CATEGORIES:
+        raise ValidationError("invalid primary_category")

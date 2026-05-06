@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 
-from api.auth import CurrentUser, get_current_user, get_optional_user
+from api.auth import CurrentUser, get_current_user
 from api.deps import (
     get_db,
     get_field_definition_repository,
@@ -67,7 +67,7 @@ def list_invitations_endpoint(
 @router.get("/{id}")
 def get_invitation_endpoint(
     id: str,
-    current_user: CurrentUser | None = Depends(get_optional_user),
+    _current_user: CurrentUser = Depends(get_current_user),
     repo=Depends(get_invitation_repository),
     guest_slot_repo=Depends(get_invitation_guest_slot_repository),
     tagging_repo=Depends(get_tagging_repository),

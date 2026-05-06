@@ -15,6 +15,7 @@ class Event(BaseModel):
     is_online: bool
     visibility: EventVisibility = "public"
     imageURL: str | None = None
+    primary_category: str | None = None
     deleted: bool
     created_at: str
     updated_at: str
@@ -31,6 +32,7 @@ class EventQueryParams(BaseModel):
     deleted: bool | None = None
     created_by: str | None = None
     tag_id: str | None = None
+    primary_category: str | None = None
     limit: int | None = None
     offset: int | None = None
 
@@ -41,4 +43,5 @@ class EventQueryParams(BaseModel):
         ("is_online", "is_online", "=="),
         ("deleted", "deleted", "=="),
         ("created_by", "created_by", "=="),
+        ("primary_category", "primary_category", "=="),
     ]

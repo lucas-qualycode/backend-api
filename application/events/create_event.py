@@ -5,7 +5,7 @@ from application.events.schemas import CreateEventInput
 from domain.events.entity import Event
 from domain.events.repository import EventRepository
 from domain.locations.repository import LocationRepository
-from utils.validators import validate_name, validate_url
+from utils.validators import validate_name, validate_primary_category, validate_url
 
 
 def create_event(
@@ -17,6 +17,7 @@ def create_event(
 ) -> Event:
     validate_name(data.name)
     validate_url(data.imageURL, "imageURL")
+    validate_primary_category(data.primary_category)
     is_online = data.is_online if data.is_online is not None else False
     visibility = data.visibility if data.visibility is not None else "public"
     location_id = resolve_location_id_for_event(
@@ -25,6 +26,7 @@ def create_event(
         is_online,
         created_by,
     )
+    pc = data.primary_category.strip() if data.primary_category else None
     event = Event(
         id=str(uuid.uuid4()),
         name=data.name,
@@ -35,6 +37,7 @@ def create_event(
         is_online=is_online,
         visibility=visibility,
         imageURL=data.imageURL,
+        primary_category=pc,
         deleted=False,
         created_at=now,
         updated_at=now,

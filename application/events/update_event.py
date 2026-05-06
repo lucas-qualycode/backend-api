@@ -4,7 +4,7 @@ from domain.events.entity import Event
 from domain.events.exceptions import EventNotFoundError
 from domain.events.repository import EventRepository
 from domain.locations.repository import LocationRepository
-from utils.validators import validate_name, validate_url
+from utils.validators import validate_name, validate_primary_category, validate_url
 
 
 def update_event(
@@ -23,8 +23,12 @@ def update_event(
     if data.name is not None:
         validate_name(data.name)
     validate_url(data.imageURL, "imageURL")
+    if data.primary_category is not None:
+        validate_primary_category(data.primary_category)
     updates = data.model_dump(exclude_unset=True)
     updates.pop("tag_ids", None)
+    if "primary_category" in updates and updates["primary_category"] is not None:
+        updates["primary_category"] = str(updates["primary_category"]).strip() or None
 
     next_is_online = data.is_online if data.is_online is not None else existing.is_online
 

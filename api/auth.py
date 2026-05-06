@@ -61,27 +61,6 @@ RequireAdmin = Depends(require_roles("admin"))
 RequireOrganizer = Depends(require_roles("admin", "organizer"))
 
 
-def get_optional_user(
-    request: Request,
-    authorization: Annotated[str | None, Header()] = None,
-) -> CurrentUser | None:
-    token = _bearer_token(authorization or request.headers.get("authorization"))
-    if not token:
-        return None
-    try:
-        decoded = firebase_auth.verify_id_token(token)
-        uid = decoded.get("uid")
-        if not uid:
-            return None
-        return CurrentUser(
-            uid=uid,
-            email=decoded.get("email"),
-            role=decoded.get("role", "user"),
-        )
-    except Exception:
-        return None
-
-
 def get_user_or_guest_list(
     request: Request,
     authorization: Annotated[str | None, Header()] = None,

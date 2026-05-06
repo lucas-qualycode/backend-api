@@ -15,6 +15,7 @@ def _params_without_tag_filter(q: EventQueryParams) -> EventQueryParams:
         is_online=q.is_online,
         deleted=q.deleted,
         created_by=q.created_by,
+        primary_category=q.primary_category,
         limit=q.limit,
         offset=q.offset,
     )
@@ -54,6 +55,11 @@ def list_events_as_dicts(
             if query_params.created_by is not None and ev.created_by != query_params.created_by:
                 continue
             if query_params.name is not None and ev.name != query_params.name:
+                continue
+            if (
+                query_params.primary_category is not None
+                and ev.primary_category != query_params.primary_category
+            ):
                 continue
             events.append(ev)
         return embed_events_response_dicts(events, tagging_repo, tag_repo, location_repo)

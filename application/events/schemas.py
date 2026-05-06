@@ -13,6 +13,7 @@ class CreateEventInput(BaseModel):
     visibility: EventVisibility | None = None
     tag_ids: list[str]
     imageURL: str | None = None
+    primary_category: str | None = None
 
 
 class UpdateEventInput(BaseModel):
@@ -25,3 +26,4 @@ class UpdateEventInput(BaseModel):
     visibility: EventVisibility | None = None
     tag_ids: list[str] | None = None
     imageURL: str | None = None
+    primary_category: str | None = None

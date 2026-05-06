@@ -39,6 +39,7 @@ def list_events_endpoint(
     deleted: bool | None = None,
     created_by: str | None = None,
     tag_id: str | None = None,
+    primary_category: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
     event_repo=Depends(get_event_repository),
@@ -54,6 +55,7 @@ def list_events_endpoint(
         deleted=deleted,
         created_by=created_by,
         tag_id=tag_id,
+        primary_category=primary_category,
         limit=limit,
         offset=offset,
     )
