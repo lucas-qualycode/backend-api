@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from api.auth import CurrentUser, UserOrGuestListAuth, get_current_user, get_user_or_guest_list
+from api.auth import CurrentUser, get_current_user
 from api.deps import get_attendee_repository, get_event_repository, get_user_product_repository
 from application.attendees import (
     check_in_attendee,
@@ -32,7 +32,7 @@ class UpdateAttendeeStatusBody(BaseModel):
 @router.get("/{event_id}/attendees")
 def list_attendees_endpoint(
     event_id: str,
-    auth: UserOrGuestListAuth = Depends(get_user_or_guest_list),
+    current_user: CurrentUser = Depends(get_current_user),
     user_id: str | None = None,
     user_product_id: str | None = None,
     status: str | None = None,
@@ -40,7 +40,7 @@ def list_attendees_endpoint(
     offset: int | None = None,
     repo=Depends(get_attendee_repository),
 ):
-    uid = user_id or (auth.user.uid if auth.user else None)
+    uid = user_id or current_user.uid
     params = AttendeeQueryParams(
         event_id=event_id,
         user_id=uid,
@@ -84,12 +84,12 @@ def create_attendee_endpoint(
 def check_in_attendee_endpoint(
     event_id: str,
     body: CheckInBody,
-    auth: UserOrGuestListAuth = Depends(get_user_or_guest_list),
+    current_user: CurrentUser = Depends(get_current_user),
     event_repo=Depends(get_event_repository),
     user_product_repo=Depends(get_user_product_repository),
     attendee_repo=Depends(get_attendee_repository),
 ):
-    if auth.user and auth.user.role not in ("admin", "organizer"):
+    if current_user.role not in ("admin", "organizer"):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     try:
         attendee = check_in_attendee(

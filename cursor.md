@@ -69,7 +69,7 @@ On **`POST /orders`**, `application/orders/validate_additional_data.py` runs bef
 | **Mangum** | Adapter: AWS Lambda / API Gateway event → ASGI → FastAPI. Used in `main.py` to run the app in Firebase. |
 | **uvicorn** | ASGI server for local development (`cd` into this directory, then `uvicorn app:app`; or `PYTHONPATH=<this_dir> uvicorn app:app`). |
 
-Standard library usage: `hmac` (constant-time token compare for guest list), `secrets` (guest list token generation), `uuid` (new entity IDs), `datetime` (timestamps), `logging`.
+Standard library usage: `uuid` (new entity IDs), `datetime` (timestamps), `logging`.
 
 ---
 
@@ -78,7 +78,7 @@ Standard library usage: `hmac` (constant-time token compare for guest list), `se
 ```
 backend_api/
 ├── api/                    # HTTP layer
-│   ├── auth.py             # get_current_user, get_user_or_guest_list, require_roles, RequireOrganizer, RequireAdmin
+│   ├── auth.py             # get_current_user, require_roles, RequireOrganizer, RequireAdmin
 │   ├── deps.py             # get_db, get_*_repository for every aggregate
 │   └── routers/            # One router per domain (see API reference below)
 ├── application/            # Use cases per aggregate (events, attendees, orders, payments, …)
@@ -95,7 +95,7 @@ backend_api/
 └── cursor.md               # This file
 ```
 
-- **api/routers**: Thin HTTP: parse request, call application use case, return JSON. Auth via `Depends(get_current_user)`, `Depends(get_user_or_guest_list)`, or `RequireOrganizer` / `RequireAdmin`.
+- **api/routers**: Thin HTTP: parse request, call application use case, return JSON. Auth via `Depends(get_current_user)` or `RequireOrganizer` / `RequireAdmin`.
 - **application/**: Use-case functions; take repo(s) and DTOs, return entities or raise domain exceptions. No FastAPI imports.
 - **domain/**: Pydantic entities, `*QueryParams` with `FILTER_SPEC`, abstract `*Repository`, and domain exceptions.
 - **infrastructure/persistence**: `get_timestamp()` (ISO UTC + "Z"), `apply_filters(query, params, FILTER_SPEC)`; each `Firestore*Repository` implements the corresponding `domain.*.repository`.
@@ -105,18 +105,13 @@ backend_api/
 ## Auth and authorization
 
 - **Firebase ID token**: `Authorization: Bearer <id_token>`. Validated in `get_current_user`; returns `CurrentUser(uid, email, role)`. Role comes from token claims (e.g. custom `role`).
-- **Guest list token**: For event-scoped read/check-in without a user. Header `X-Guest-List-Token` + path identifies event (`event_id` or `id`). Dependency `get_user_or_guest_list`:
-  - Tries Bearer first; if valid, returns `UserOrGuestListAuth(user=CurrentUser(...), is_guest_list=False)`.
-  - Else if `X-Guest-List-Token` present, loads event by path param, compares token to `event.guest_list_token` with `hmac.compare_digest`; on match returns `UserOrGuestListAuth(user=None, is_guest_list=True)`.
-  - Otherwise 401.
 - **Role checks**: `RequireOrganizer = Depends(require_roles("admin", "organizer"))`, `RequireAdmin = Depends(require_roles("admin"))`. Use on routes that need organizer or admin.
-- **Routes using guest list**: `GET /events/{id}/user-products`, `GET /events/{event_id}/attendees`, `POST /events/{event_id}/attendees/check-in`. Check-in allows either Bearer (then must be admin/organizer) or valid guest list token.
 
 ---
 
 ## API reference (all endpoints)
 
-Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user** = `get_current_user`; **organizer** = `RequireOrganizer`; **user or guest** = `get_user_or_guest_list`; **guest check-in** = same + if user then must be admin/organizer.
+Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user** = `get_current_user`; **organizer** = `RequireOrganizer`.
 
 | Method | Path | Auth |
 |--------|------|------|
@@ -124,16 +119,15 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | **Events** (`prefix=/events`) | | |
 | GET | `/events` | none; optional filters include `primary_category` |
 | GET | `/events/{id}` | none |
-| GET | `/events/{id}/user-products` | user or guest |
-| POST | `/events/{id}/guest-list-token` | organizer |
+| GET | `/events/{id}/user-products` | user |
 | POST | `/events` | organizer |
 | PUT/PATCH | `/events/{id}` | organizer |
 | DELETE | `/events/{id}` | organizer (soft delete; no validate-deletion endpoint in FastAPI) |
 | **Attendees** (under `/events`) | | |
-| GET | `/events/{event_id}/attendees` | user or guest |
+| GET | `/events/{event_id}/attendees` | user |
 | GET | `/events/{event_id}/attendees/{id}` | user |
 | POST | `/events/{event_id}/attendees` | user |
-| POST | `/events/{event_id}/attendees/check-in` | guest check-in |
+| POST | `/events/{event_id}/attendees/check-in` | user (role admin or organizer) |
 | PATCH | `/events/{event_id}/attendees/{id}/status` | user |
 | **Stands** (under `/events`) | | |
 | GET | `/events/{event_id}/stands` | user |
@@ -246,7 +240,7 @@ Success responses: single entity or list of entities as JSON (`model_dump(mode="
 1. **Domain**: Add or extend entity and `*QueryParams` in `domain/<agg>/entity.py`; add exception in `domain/<agg>/exceptions.py`; extend or add abstract repo in `domain/<agg>/repository.py`.
 2. **Infrastructure**: Implement or extend `Firestore*Repository` in `infrastructure/persistence/`, and add collection name in `infrastructure/config.py` if new collection.
 3. **Application**: Add use-case module under `application/<agg>/` (e.g. `do_something.py`), export from `application/<agg>/__init__.py`.
-4. **API**: In `api/deps.py` add `get_<agg>_repository` if new repo. In the right router, add endpoint: parse input, call use case, return JSON or raise; use `Depends(get_current_user)` or `get_user_or_guest_list` (and optionally `RequireOrganizer`) as needed.
+4. **API**: In `api/deps.py` add `get_<agg>_repository` if new repo. In the right router, add endpoint: parse input, call use case, return JSON or raise; use `Depends(get_current_user)` (and optionally `RequireOrganizer`) as needed.
 5. **Exception handling**: If new domain exception should return 404/400, register it in `app.py` exception handlers (or use existing `NotFoundError`/`ValidationError`).
 
 ---
@@ -259,7 +253,7 @@ Success responses: single entity or list of entities as JSON (`model_dump(mode="
 
 ## Domain entities (reference)
 
-Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, location, active, is_paid, is_online, visibility `public` \| `private`, imageURL, optional `primary_category` controlled slug from `domain/events/primary_categories.py`, deleted, created_at, updated_at, created_by, last_updated_by, guest_list_token); tags are attached via **Tagging** rows (`taggings` collection) and returned on event GET/list as embedded `tags`. **Tag** (hierarchical taxonomy: `parent_tag_id`, `applies_to`, `depth`, …); **Tagging** (id, tag_id, entity_type, entity_id, created_by, created_at). **Attendee** (id, event_id, user_id, user_product_id, invitation_id, status, check_in_time, created_at, updated_at, metadata); **UserProduct** (id, parent_id, product_id, user_id, status, quantity, price, currency, purchase_date, valid_from, valid_until, …); **Product**, **Order**, **Payment**, **Invitation**, **Stand**, **Schedule**, **User** (includes **UserPreferences** with appearance fields as above), **Address**. Query params live in the same entity file with a `FILTER_SPEC` class attribute for Firestore filters where applicable. Exceptions: `domain/<agg>/exceptions.py` (e.g. `EventNotFoundError(event_id)`).
+Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, location, active, is_paid, is_online, visibility `public` \| `private`, imageURL, optional `primary_category` controlled slug from `domain/events/primary_categories.py`, deleted, created_at, updated_at, created_by, last_updated_by, optional legacy `guest_list_token` ignored by API); tags are attached via **Tagging** rows (`taggings` collection) and returned on event GET/list as embedded `tags`. **Tag** (hierarchical taxonomy: `parent_tag_id`, `applies_to`, `depth`, …); **Tagging** (id, tag_id, entity_type, entity_id, created_by, created_at). **Attendee** (id, event_id, user_id, user_product_id, invitation_id, status, check_in_time, created_at, updated_at, metadata); **UserProduct** (id, parent_id, product_id, user_id, status, quantity, price, currency, purchase_date, valid_from, valid_until, …); **Product**, **Order**, **Payment**, **Invitation**, **Stand**, **Schedule**, **User** (includes **UserPreferences** with appearance fields as above), **Address**. Query params live in the same entity file with a `FILTER_SPEC` class attribute for Firestore filters where applicable. Exceptions: `domain/<agg>/exceptions.py` (e.g. `EventNotFoundError(event_id)`).
 
 ---
 
@@ -272,12 +266,10 @@ Each aggregate has `domain/<agg>/entity.py`: **Event** (id, name, description, l
 
 ---
 
-## Reference: event and guest list
+## Reference: event-scoped reads and check-in
 
-- **Event** has optional `guest_list_token` (set via `POST /events/{id}/guest-list-token`). Used only for guest-list auth comparison; not returned in normal event GET.
-- **GET /events/{id}/user-products**: List user products with `parent_id=id`, `status=ACTIVE`; auth = user or guest list.
-- **POST /events/{id}/guest-list-token**: Generate token, set on event, return `{ "token": "..." }`; RequireOrganizer.
-- **GET /events/{event_id}/attendees**: List attendees; `user_id` default = current user if Bearer, else unset (guest list sees all).
-- **POST /events/{event_id}/attendees/check-in**: Body `{ "user_product_id": "..." }`. Resolve event and user product; if attendee exists and is CHECKED_IN return it; else update to CHECKED_IN with `check_in_time` or create new attendee with CHECKED_IN. Auth: user (admin/organizer) or guest list.
+- **GET /events/{id}/user-products**: List user products with `parent_id=id`, `status=ACTIVE`; auth = Bearer (`get_current_user`).
+- **GET /events/{event_id}/attendees**: List attendees; optional query `user_id` filters; if omitted, defaults to current user’s `uid`.
+- **POST /events/{event_id}/attendees/check-in**: Body `{ "user_product_id": "..." }`. Resolve event and user product; if attendee exists and is CHECKED_IN return it; else update to CHECKED_IN with `check_in_time` or create new attendee with CHECKED_IN. Caller must have role **admin** or **organizer** (token claim).
 
 This file is the single source of truth for backend_api structure and behavior; update it when you add or change modules or auth.

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.auth import CurrentUser, RequireOrganizer, UserOrGuestListAuth, get_user_or_guest_list
+from api.auth import CurrentUser, RequireOrganizer, get_current_user
 from api.deps import (
     get_event_repository,
     get_location_repository,
@@ -11,7 +11,6 @@ from api.deps import (
 from application.events import (
     create_event,
     delete_event,
-    generate_guest_list_token,
     get_event,
     list_events_as_dicts,
     update_event,
@@ -80,7 +79,7 @@ def get_event_endpoint(
 @router.get("/{id}/user-products")
 def list_event_user_products_endpoint(
     id: str,
-    auth: UserOrGuestListAuth = Depends(get_user_or_guest_list),
+    _current_user: CurrentUser = Depends(get_current_user),
     event_repo=Depends(get_event_repository),
     user_product_repo=Depends(get_user_product_repository),
 ):
@@ -91,19 +90,6 @@ def list_event_user_products_endpoint(
     params = UserProductQueryParams(parent_id=id, status="ACTIVE")
     items = list_user_products(user_product_repo, params)
     return [u.model_dump(mode="json") for u in items]
-
-
-@router.post("/{id}/guest-list-token")
-def generate_guest_list_token_endpoint(
-    id: str,
-    current_user: CurrentUser = RequireOrganizer,
-    repo=Depends(get_event_repository),
-):
-    try:
-        token = generate_guest_list_token(repo, id, current_user.uid, get_timestamp())
-        return {"token": token}
-    except EventNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.post("", status_code=201)
