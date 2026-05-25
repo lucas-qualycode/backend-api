@@ -58,7 +58,7 @@ def test_create_invitation_persists_only_filled_guest_rows(mock_tx: MagicMock) -
         ],
     )
     field_def_repo = MagicMock()
-    invitation = create_invitation(db, repo, product_repo, field_def_repo, data, "now")
+    invitation, _raw_token = create_invitation(db, repo, product_repo, field_def_repo, data, "now")
     mock_tx.assert_called_once()
     passed_inv, slots = mock_tx.call_args[0][1], mock_tx.call_args[0][2]
     assert invitation.guest_slot_count == 3

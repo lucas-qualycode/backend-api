@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 
+from domain.products.types import ProductType
+
 
 class OrderItemInput(BaseModel):
     product_id: str
-    product_type: str | None = None
+    product_type: ProductType | None = None
     quantity: int
     unit_price: int
     total_price: int | None = None

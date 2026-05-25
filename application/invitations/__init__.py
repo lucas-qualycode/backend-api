@@ -4,6 +4,7 @@ from application.invitations.get_invitation import get_invitation
 from application.invitations.list_invitations import list_invitations, list_invitations_as_dicts
 from application.invitations.update_invitation import update_invitation
 from application.invitations.update_invitation_status import update_invitation_status
+from application.invitations.submit_guest_invitation import submit_guest_invitation
 
 __all__ = [
     "get_invitation",
@@ -13,4 +14,5 @@ __all__ = [
     "update_invitation",
     "update_invitation_status",
     "delete_invitation",
+    "submit_guest_invitation",
 ]

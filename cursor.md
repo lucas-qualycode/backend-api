@@ -149,18 +149,20 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | DELETE | `/schedules/{id}` | organizer (schedule’s event must be **owned** by caller) |
 | **Invitations** (`prefix=/invitations`) | | |
 | GET | `/invitations` | user (query: event_id, status, tag_id, limit, offset) |
-| GET | `/invitations/{id}` | user |
-| POST | `/invitations` | organizer |
+| GET | `/invitations/{id}` | organizer (Firebase) **or** guest (`token` query / `X-Invitation-Token`) |
+| POST | `/invitations/{id}/guest-submit` | guest (**requires** invite token; no Firebase) |
+| POST | `/invitations/{id}/access-token` | organizer (regenerate magic-link token; returns one-time `access_token`) |
+| POST | `/invitations` | organizer (response includes one-time `access_token`; stores `access_token_hash` only) |
 | PUT/PATCH | `/invitations/{id}` | organizer |
 | DELETE | `/invitations/{id}` | organizer |
 | POST | `/invitations/{id}/status` | organizer |
 | **Field definitions** (`prefix=/field-definitions`) | | |
-| GET | `/field-definitions` | none (query: active, deleted, field_type, limit, offset) |
+| GET | `/field-definitions` | organizer (Firebase) **or** guest (`invitation_id` + `token` query / header) |
 | GET | `/field-definitions/{id}` | none |
 | POST | `/field-definitions` | organizer |
 | PUT/PATCH | `/field-definitions/{id}` | organizer |
 | **Products** (`prefix=/products`) | | |
-| GET | `/products` | none (query: name, parent_id, active, deleted, tag_id, limit, offset) |
+| GET | `/products` | public when no `parent_id`; with `parent_id`: event owner (Firebase) **or** guest (`invitation_id` + token scoped to that event) |
 | GET | `/products/{id}` | none |
 | POST | `/products` | organizer |
 | PUT/PATCH | `/products/{id}` | organizer |
@@ -194,7 +196,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | PUT/PATCH | `/payments/{id}` | user |
 | PATCH | `/payments/{id}/status` | user |
 
-**Public (no auth)**: `/health`, `GET /events`, `GET /events/{id}`, `GET /tags`, `GET /tags/{id}`, `GET /products`, `GET /products/{id}`.
+**Public (no auth)**: `/health`, `GET /events` (list), `GET /tags`, `GET /tags/{id}`, `GET /products/{id}` (single product). **`GET /events/{id}`**: public events without token; **private** events require Firebase owner **or** guest `invitation_id` + `token`. Guest catalog reads use the same invite token on `GET /invitations/{id}`, `GET /products?parent_id=…`, `GET /field-definitions?invitation_id=…`, and `POST /invitations/{id}/guest-submit`.
 
 ### Users (`/users`)
 
@@ -208,7 +210,9 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 
 Defined in `infrastructure/config.py`. Top-level: `events`, `tags`, `taggings`, `products`, `fieldDefinitions`, `userProducts`, `inventory`, `users`, `addresses`, `orders`, `payments`, `invitations`. Subcollections: under `events/{eventId}` → `stands`, `schedules`, `invitations`, `attendees`; under `invitations/{invitationId}` → `guestSlots` (guest slots for multi-guest invites). Names: `EVENTS_COLLECTION_NAME` = `"events"`, `TAGS_COLLECTION_NAME` = `"tags"`, `TAGGINGS_COLLECTION_NAME` = `"taggings"`, `STANDS_COLLECTION_NAME` = `"stands"`, `SCHEDULES_COLLECTION_NAME` = `"schedules"`, `INVITATIONS_COLLECTION_NAME` = `"invitations"`, `INVITATION_GUEST_SLOTS_COLLECTION_NAME` = `"guestSlots"`, `ATTENDEES_COLLECTION_NAME` = `"attendees"`, `PRODUCTS_COLLECTION_NAME` = `"products"`, `FIELD_DEFINITIONS_COLLECTION_NAME` = `"fieldDefinitions"`, `USER_PRODUCTS_COLLECTION_NAME` = `"userProducts"`, `INVENTORY_COLLECTION_NAME` = `"inventory"`, `USERS_COLLECTION_NAME` = `"users"`, `ADDRESSES_COLLECTION_NAME` = `"addresses"`, `ORDERS_COLLECTION_NAME` = `"orders"`, `PAYMENTS_COLLECTION_NAME` = `"payments"`.
 
-**Invitations**: parent document includes **`guest_slot_count`** (declared guest capacity). **POST `/invitations`** accepts **`guest_slot_count`** (integer, ≤ ticket **`max_per_user`** when **`ticket_id`** is set) and optional **`guests`**: per-row details; **`len(guests)`** must be ≤ **`guest_slot_count`**. Only rows with a non-empty **`first_name`** or non-empty **`required_field_ids`** are written as **guest slot** subdocuments; unfilled rows are not stored. Each `required_field_id` must either be an active additional-info field on the ticket or an **active, non-deleted** row in **`fieldDefinitions`** when **`ticket_id`** is set; without **`ticket_id`**, **`guest_slot_count`** must be 0. When there is at least one slot document, create runs in one Firestore transaction with the parent. **GET `/invitations/{id}`** includes **`guest_slots`**; **GET `/invitations`** list includes **`guest_slot_count`** and **`guest_slots`** (empty list when count is 0; populated when count &gt; 0).
+**Invitations**: parent document includes **`guest_slot_count`** (declared guest capacity). **POST `/invitations`** accepts **`guest_slot_count`** (integer, ≤ ticket **`max_per_user`** when **`ticket_id`** is set) and optional **`guests`**: per-row details; **`len(guests)`** must be ≤ **`guest_slot_count`**. Only rows with a non-empty **`first_name`** or non-empty **`required_field_ids`** are written as **guest slot** subdocuments; unfilled rows are not stored. Each `required_field_id` must either be an active additional-info field on the ticket or an **active, non-deleted** row in **`fieldDefinitions`** when **`ticket_id`** is set; without **`ticket_id`**, **`guest_slot_count`** must be 0. When there is at least one slot document, create runs in one Firestore transaction with the parent. **GET `/invitations/{id}`** includes **`guest_slots`**; **GET `/invitations`** list includes **`guest_slot_count`** and **`guest_slots`** (empty list when count is 0; populated when count &gt; 0). **Invitation access token**: On create (and **POST `/invitations/{id}/access-token`**), API returns a one-time **`access_token`** (~43 URL-safe chars); Firestore stores **`access_token_hash`** only (SHA-256 with `INVITATION_TOKEN_PEPPER`). Guest URL: `/events/{eventId}/invitation/{invitationId}?token=…`. Legacy **`Event.guest_list_token`** is unused.
+
+**POST `/invitations/{id}/guest-submit`**: guest RSVP (invite token required) — partial body with optional **`guests`** and/or **`message`**. **`guests`**: each row may include optional **`id`** (update existing slot) or omit **`id`** (create new); **`len(guests)`** ≤ **`guest_slot_count`**; slot fields include **`field_values`**, **`attending`**. **`message`**: stored in invitation **`metadata.guest_message`** without rewriting slots. Omitting **`guests`** or **`message`** leaves that part unchanged.
 
 Composite index definitions for `tags` / `taggings` live in [`firestore.indexes.json`](firestore.indexes.json) in this directory (and in [`backend/firestore.indexes.json`](../backend/firestore.indexes.json) for the wider Firebase project).
 

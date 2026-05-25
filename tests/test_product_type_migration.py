@@ -45,6 +45,11 @@ def test_product_validate_keeps_ticket() -> None:
     assert p.type == ProductType.TICKET
 
 
+def test_product_validate_keeps_gift() -> None:
+    p = Product.model_validate(_minimal_product_dict(type="GIFT"))
+    assert p.type == ProductType.GIFT
+
+
 def test_field_groups_partition_product_fields() -> None:
     assert "type" in PRODUCT_CATALOG_FIELD_NAMES
     assert "value" in PRODUCT_COMMERCE_FIELD_NAMES

@@ -26,6 +26,7 @@ def test_inventory_product_type_field() -> None:
     assert inventory_product_type_field(None) == InventoryProductType.PRODUCT
     assert inventory_product_type_field("TICKET") == InventoryProductType.TICKET
     assert inventory_product_type_field(ProductType.MERCH) == InventoryProductType.PRODUCT
+    assert inventory_product_type_field(ProductType.GIFT) == InventoryProductType.PRODUCT
     assert inventory_product_type_field(ProductType.TICKET) == InventoryProductType.TICKET
     assert inventory_product_type_field("OTHER") == InventoryProductType.PRODUCT
 

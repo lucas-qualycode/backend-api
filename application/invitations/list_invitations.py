@@ -24,6 +24,11 @@ def list_invitations(
     return repo.list(_params_without_tag_filter(query_params))
 
 
+def _strip_sensitive_invitation_fields(rows: list[dict]) -> None:
+    for d in rows:
+        d.pop("access_token_hash", None)
+
+
 def _attach_guest_slots(rows: list[dict], guest_slot_repo: InvitationGuestSlotRepository) -> None:
     for d in rows:
         n = d.get("guest_slot_count") or 0
@@ -61,9 +66,11 @@ def list_invitations_as_dicts(
                 continue
             invitations.append(inv)
         rows = embed_tags_on_invitations(invitations, tagging_repo, tag_repo)
+        _strip_sensitive_invitation_fields(rows)
         _attach_guest_slots(rows, guest_slot_repo)
         return rows
     raw = invitation_repo.list(_params_without_tag_filter(query_params))
     rows = embed_tags_on_invitations(raw, tagging_repo, tag_repo)
+    _strip_sensitive_invitation_fields(rows)
     _attach_guest_slots(rows, guest_slot_repo)
     return rows

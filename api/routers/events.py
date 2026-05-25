@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.auth import CurrentUser, RequireOrganizer, get_current_user
+from api.invitation_access import require_event_read_access
 from api.deps import (
     get_event_repository,
     get_location_repository,
+    get_schedule_repository,
     get_tag_repository,
     get_tagging_repository,
     get_user_product_repository,
@@ -63,17 +65,19 @@ def list_events_endpoint(
 
 @router.get("/{id}")
 def get_event_endpoint(
-    id: str,
-    event_repo=Depends(get_event_repository),
+    event=Depends(require_event_read_access),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
     location_repo=Depends(get_location_repository),
+    schedule_repo=Depends(get_schedule_repository),
 ):
-    try:
-        event = get_event(event_repo, id)
-        return embed_event_response_dict(event, tagging_repo, tag_repo, location_repo)
-    except EventNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return embed_event_response_dict(
+        event,
+        tagging_repo,
+        tag_repo,
+        location_repo,
+        schedule_repo,
+    )
 
 
 @router.get("/{id}/user-products")
@@ -100,6 +104,7 @@ def create_event_endpoint(
     location_repo=Depends(get_location_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
+    schedule_repo=Depends(get_schedule_repository),
 ):
     try:
         validate_tag_ids_for_entity(
@@ -122,7 +127,13 @@ def create_event_endpoint(
         current_user.uid,
         now,
     )
-    return embed_event_response_dict(event, tagging_repo, tag_repo, location_repo)
+    return embed_event_response_dict(
+        event,
+        tagging_repo,
+        tag_repo,
+        location_repo,
+        schedule_repo,
+    )
 
 
 @router.put("/{id}")
@@ -135,6 +146,7 @@ def update_event_endpoint(
     location_repo=Depends(get_location_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),
+    schedule_repo=Depends(get_schedule_repository),
 ):
     try:
         now = get_timestamp()
@@ -159,7 +171,13 @@ def update_event_endpoint(
                 current_user.uid,
                 now,
             )
-        return embed_event_response_dict(event, tagging_repo, tag_repo, location_repo)
+        return embed_event_response_dict(
+            event,
+            tagging_repo,
+            tag_repo,
+            location_repo,
+            schedule_repo,
+        )
     except EventNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

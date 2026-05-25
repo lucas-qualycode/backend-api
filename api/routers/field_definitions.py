@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.auth import CurrentUser, RequireOrganizer
+from api.invitation_access import require_field_definitions_guest_access
 from api.deps import get_field_definition_repository
 from application.field_definitions import (
     create_field_definition,
@@ -27,6 +28,7 @@ def list_field_definitions_endpoint(
     field_type: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
+    _access: None = Depends(require_field_definitions_guest_access),
     repo=Depends(get_field_definition_repository),
 ):
     params = FieldDefinitionQueryParams(

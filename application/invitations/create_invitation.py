@@ -1,6 +1,7 @@
 import uuid
 from typing import Any
 
+from application.invitations.access_token import generate_access_token, hash_access_token
 from application.invitations.firestore_create_invitation import run_create_invitation_with_guest_slots
 from application.invitations.schemas import CreateInvitationGuestSlotInput, CreateInvitationInput
 from application.invitations.validate_guest_slots import validate_guest_slots_for_create
@@ -23,7 +24,7 @@ def create_invitation(
     field_def_repo: FieldDefinitionRepository,
     data: CreateInvitationInput,
     now: str,
-) -> Invitation:
+) -> tuple[Invitation, str]:
     guests_in = list(data.guests or [])
     total_slots = max(0, int(data.guest_slot_count))
     if data.ticket_id:
@@ -41,11 +42,14 @@ def create_invitation(
                 invitation_id=invitation_id,
                 first_name=g.first_name,
                 required_field_ids=list(g.required_field_ids),
+                field_values={},
+                attending=True,
                 status=InvitationGuestSlotStatus.PENDING,
                 created_at=now,
                 updated_at=now,
             )
         )
+    raw_access_token = generate_access_token()
     invitation = Invitation(
         id=invitation_id,
         event_id=data.event_id,
@@ -60,9 +64,10 @@ def create_invitation(
         updated_at=now,
         guest_slot_count=total_slots,
         metadata=data.metadata,
+        access_token_hash=hash_access_token(raw_access_token),
     )
     if slot_entities:
         run_create_invitation_with_guest_slots(db, invitation, slot_entities)
     else:
         repo.create(invitation)
-    return invitation
+    return invitation, raw_access_token

@@ -4,6 +4,7 @@ from enum import StrEnum
 class ProductType(StrEnum):
     TICKET = "TICKET"
     MERCH = "MERCH"
+    GIFT = "GIFT"
 
 
 class FulfillmentType(StrEnum):

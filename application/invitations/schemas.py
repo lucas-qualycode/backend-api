@@ -91,7 +91,42 @@ class UpdateInvitationInput(BaseModel):
 
     @field_validator("ticket_id", mode="before")
     @classmethod
-    def _blank_optional_ids(cls, v: str | None) -> str | None:
+    def _blank_optional_ids_update(cls, v: str | None) -> str | None:
         if v is None or (isinstance(v, str) and v.strip() == ""):
             return None
         return v.strip() if isinstance(v, str) else v
+
+
+class SubmitGuestSlotInput(BaseModel):
+    id: str | None = None
+    first_name: str = ""
+    required_field_ids: list[str] = Field(default_factory=list)
+    field_values: dict[str, str] = Field(default_factory=dict)
+    attending: bool = True
+
+    @field_validator("first_name", mode="before")
+    @classmethod
+    def _submit_first_name_strip(cls, v: object) -> str:
+        if v is None:
+            return ""
+        return v.strip() if isinstance(v, str) else str(v).strip()
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def _blank_id_to_none(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        s = v.strip() if isinstance(v, str) else str(v).strip()
+        return s or None
+
+
+class SubmitGuestInvitationInput(BaseModel):
+    message: str | None = None
+    guests: list[SubmitGuestSlotInput] | None = None
+
+    @field_validator("message", mode="before")
+    @classmethod
+    def _message_strip(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        return v.strip() if isinstance(v, str) else str(v).strip()

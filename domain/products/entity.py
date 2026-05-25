@@ -37,23 +37,6 @@ class Product(BaseModel):
     last_updated_by: str
     metadata: dict = {}
 
-    @model_validator(mode="before")
-    @classmethod
-    def _migrate_legacy_type(cls, data: Any) -> Any:
-        if not isinstance(data, dict):
-            return data
-        out = dict(data)
-        if out.get("additional_info_fields") is None:
-            out["additional_info_fields"] = []
-        if out.get("metadata") is None:
-            out["metadata"] = {}
-        t = out.get("type")
-        if t is None or t == "":
-            out["type"] = ProductType.MERCH.value
-        elif str(t) not in (ProductType.TICKET.value, ProductType.MERCH.value):
-            out["type"] = ProductType.MERCH.value
-        return out
-
 
 class ProductQueryParams(BaseModel):
     name: str | None = None

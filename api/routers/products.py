@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.auth import CurrentUser, RequireOrganizer
+from api.invitation_access import require_guest_catalog_access
 from api.deps import (
     get_db,
     get_inventory_repository,
@@ -39,6 +40,7 @@ def list_products_endpoint(
     tag_id: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
+    _catalog_access: None = Depends(require_guest_catalog_access),
     repo=Depends(get_product_repository),
     tagging_repo=Depends(get_tagging_repository),
     tag_repo=Depends(get_tag_repository),

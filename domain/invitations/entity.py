@@ -33,6 +33,7 @@ class Invitation(BaseModel):
     updated_at: str
     guest_slot_count: int = 0
     metadata: dict = {}
+    access_token_hash: str | None = None
 
 
 class InvitationQueryParams(BaseModel):

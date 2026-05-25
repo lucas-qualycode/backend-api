@@ -60,6 +60,8 @@ def update_invitation(
                     invitation_id=invitation_id,
                     first_name=g.first_name,
                     required_field_ids=list(g.required_field_ids),
+                    field_values={},
+                    attending=True,
                     status=InvitationGuestSlotStatus.PENDING,
                     created_at=updated_at,
                     updated_at=updated_at,

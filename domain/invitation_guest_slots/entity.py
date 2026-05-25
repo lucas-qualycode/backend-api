@@ -13,6 +13,8 @@ class InvitationGuestSlot(BaseModel):
     invitation_id: str
     first_name: str
     required_field_ids: list[str]
+    field_values: dict[str, str] = {}
+    attending: bool = True
     status: InvitationGuestSlotStatus
     created_at: str
     updated_at: str
