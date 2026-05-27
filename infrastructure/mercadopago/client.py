@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import urllib.error
 import urllib.request
@@ -9,6 +10,8 @@ from infrastructure.config import (
     MERCADOPAGO_DEFAULT_API_BASE_URL,
 )
 from utils.errors import ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 class MercadoPagoApiError(Exception):
@@ -28,6 +31,43 @@ def _access_token() -> str:
 def _api_base_url() -> str:
     raw = (os.environ.get(MERCADOPAGO_API_BASE_URL_ENV) or "").strip()
     return (raw or MERCADOPAGO_DEFAULT_API_BASE_URL).rstrip("/")
+
+
+def _credential_kind() -> str:
+    token = (os.environ.get(MERCADOPAGO_ACCESS_TOKEN_ENV) or "").strip()
+    if token.startswith("TEST-"):
+        return "TEST"
+    if token.startswith("APP_USR-"):
+        return "APP_USR"
+    if token:
+        return "unknown_prefix"
+    return "missing"
+
+
+def _parse_mp_error_detail(body: str) -> str | None:
+    if not body.strip():
+        return None
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        return body.strip()[:500]
+    if not isinstance(data, dict):
+        return body.strip()[:500]
+    for key in ("message", "error", "status_detail"):
+        value = data.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    errors = data.get("errors") or data.get("cause")
+    if isinstance(errors, list) and errors:
+        first = errors[0]
+        if isinstance(first, dict):
+            for key in ("message", "description", "code"):
+                value = first.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+        if isinstance(first, str) and first.strip():
+            return first.strip()
+    return body.strip()[:500]
 
 
 def create_order(provider_checkout: dict, *, idempotency_key: str | None = None) -> dict:
@@ -59,12 +99,26 @@ def create_order(provider_checkout: dict, *, idempotency_key: str | None = None)
             return parsed
     except urllib.error.HTTPError as exc:
         err_body = exc.read().decode("utf-8", errors="replace")
+        detail = _parse_mp_error_detail(err_body)
+        logger.error(
+            "Mercado Pago POST %s failed: status=%s credential=%s idempotency_key=%s detail=%s body=%s",
+            url,
+            exc.code,
+            _credential_kind(),
+            mp_idempotency or "<empty>",
+            detail or "<empty>",
+            err_body,
+        )
+        message = f"Mercado Pago request failed ({exc.code})"
+        if detail:
+            message = f"{message}: {detail}"
         raise MercadoPagoApiError(
-            f"Mercado Pago request failed ({exc.code})",
+            message,
             status_code=exc.code,
             body=err_body,
         ) from exc
     except urllib.error.URLError as exc:
+        logger.error("Mercado Pago POST %s failed: %s", url, exc.reason)
         raise MercadoPagoApiError(f"Mercado Pago request failed: {exc.reason}") from exc
 
 
