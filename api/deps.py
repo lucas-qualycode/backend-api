@@ -17,6 +17,9 @@ from infrastructure.persistence.firestore_invitation_guest_slots import (
 )
 from infrastructure.persistence.firestore_invitations import FirestoreInvitationRepository
 from infrastructure.persistence.firestore_inventory import FirestoreInventoryRepository
+from infrastructure.persistence.firestore_checkout_intents import (
+    FirestoreCheckoutIntentRepository,
+)
 from infrastructure.persistence.firestore_orders import FirestoreOrderRepository
 from infrastructure.persistence.firestore_payments import FirestorePaymentRepository
 from infrastructure.persistence.firestore_products import FirestoreProductRepository
@@ -100,3 +103,9 @@ def get_order_repository(db: Any = Depends(get_db)) -> FirestoreOrderRepository:
 
 def get_payment_repository(db: Any = Depends(get_db)) -> FirestorePaymentRepository:
     return FirestorePaymentRepository(db)
+
+
+def get_checkout_intent_repository(
+    db: Any = Depends(get_db),
+) -> FirestoreCheckoutIntentRepository:
+    return FirestoreCheckoutIntentRepository(db)

@@ -52,9 +52,11 @@ Routers are thin (parse → call use case → return JSON). Business logic lives
 
 Field definitions are reusable documents in **`fieldDefinitions`** and can be attached to products. Each definition includes `key`, `label`, `field_type` (`text` \| `number` \| `boolean` \| `select`), default required flag, and optional constraints (`min_length`, `max_length`, `minimum`, `maximum`, `options`). Validation for create/update definitions is in `application/field_definitions/validation.py`.
 
-### Orders and `additional_data`
+### Orders and guest checkout
 
-On **`POST /orders`**, `application/orders/validate_additional_data.py` runs before persist: for each line item, load the product and resolve its `additional_info_fields` against field definitions. **`additional_data`** must be a list of length **`quantity`**; each entry must match resolved keys and type/constraint rules. If the product has no field refs, `additional_data` must be absent/empty. For transition compatibility, validation accepts legacy `metadata.additional_data` when `additional_data` is omitted. Payment approval reads `item.additional_data` first and falls back to legacy metadata, then copies per-unit values to **`UserProduct.additional_data`**.
+- **`POST /orders`** (Firebase user): body uses `CreateOrderRequest` — line items accept `unit_price_cents` / `total_price_cents` (aliases for `unit_price` / `total_price`). Optional `total_cents` is not validated on this path (organizer/authenticated flow).
+- **`POST /invitations/{id}/checkout`** (guest token or organizer): same line-item shape plus **`payment_provider`** and **`provider_checkout`** (Mercado Pago Orders API body). Requires **`Idempotency-Key`** header. Flow: validate products against invitation `event_id` and recompute totals → `create_order` (`user_id` = `guest:{invitation_id}`) → `create_payment` → Mercado Pago `POST /v1/orders` (credentials: `MERCADOPAGO_ACCESS_TOKEN`, optional `MERCADOPAGO_API_BASE_URL`) → persist provider id/response on payment. Idempotent replays return the same `{ order_id, payment_id, … }` via **`checkoutIntents`** collection.
+- **Env**: `MERCADOPAGO_ACCESS_TOKEN` (required for paid checkout), `MERCADOPAGO_API_BASE_URL` (optional, default `https://api.mercadopago.com`).
 
 ---
 
@@ -151,6 +153,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | GET | `/invitations` | user (query: event_id, status, tag_id, limit, offset) |
 | GET | `/invitations/{id}` | organizer (Firebase) **or** guest (`token` query / `X-Invitation-Token`) |
 | GET | `/invitations/{id}/products` | organizer (Firebase) **or** guest (`token` query / `X-Invitation-Token`); scopes to invitation’s `event_id`; same filters as `GET /products` |
+| POST | `/invitations/{id}/checkout` | organizer (Firebase) **or** guest (`token` / `X-Invitation-Token`); body aligned with guest checkout payload; **`Idempotency-Key`** header required |
 | POST | `/invitations/{id}/guest-submit` | guest (**requires** invite token; no Firebase) |
 | POST | `/invitations/{id}/access-token` | organizer (regenerate magic-link token; returns one-time `access_token`) |
 | POST | `/invitations` | organizer (response includes one-time `access_token`; stores `access_token_hash` only) |
@@ -187,7 +190,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | **Orders** (`prefix=/orders`) | | |
 | GET | `/orders` | user |
 | GET | `/orders/{id}` | user |
-| POST | `/orders` | user (each line item: `additional_data` is validated per product field refs — see **Orders and additional_data** below) |
+| POST | `/orders` | user (`CreateOrderRequest`; guest purchases use invitation checkout instead) |
 | PUT/PATCH | `/orders/{id}` | user |
 | PATCH | `/orders/{id}/status` | user |
 | **Payments** (`prefix=/payments`) | | |
@@ -197,7 +200,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | PUT/PATCH | `/payments/{id}` | user |
 | PATCH | `/payments/{id}/status` | user |
 
-**Public (no auth)**: `/health`, `GET /events` (list), `GET /tags`, `GET /tags/{id}`, `GET /products/{id}` (single product). **`GET /events/{id}`**: public events without token; **private** events require Firebase owner **or** guest `invitation_id` + `token`. Guest catalog reads use the same invite token on `GET /invitations/{id}`, `GET /products?parent_id=…`, `GET /field-definitions?invitation_id=…`, and `POST /invitations/{id}/guest-submit`.
+**Public (no auth)**: `/health`, `GET /events` (list), `GET /tags`, `GET /tags/{id}`, `GET /products/{id}` (single product). **`GET /events/{id}`**: public events without token; **private** events require Firebase owner **or** guest `invitation_id` + `token`. Guest catalog reads use the same invite token on `GET /invitations/{id}`, `GET /invitations/{id}/products`, `GET /field-definitions`, and `POST /invitations/{id}/guest-submit` / `POST /invitations/{id}/checkout`.
 
 ### Users (`/users`)
 
@@ -209,7 +212,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 
 ## Firestore collections
 
-Defined in `infrastructure/config.py`. Top-level: `events`, `tags`, `taggings`, `products`, `fieldDefinitions`, `userProducts`, `inventory`, `users`, `addresses`, `orders`, `payments`, `invitations`. Subcollections: under `events/{eventId}` → `stands`, `schedules`, `invitations`, `attendees`; under `invitations/{invitationId}` → `guestSlots` (guest slots for multi-guest invites). Names: `EVENTS_COLLECTION_NAME` = `"events"`, `TAGS_COLLECTION_NAME` = `"tags"`, `TAGGINGS_COLLECTION_NAME` = `"taggings"`, `STANDS_COLLECTION_NAME` = `"stands"`, `SCHEDULES_COLLECTION_NAME` = `"schedules"`, `INVITATIONS_COLLECTION_NAME` = `"invitations"`, `INVITATION_GUEST_SLOTS_COLLECTION_NAME` = `"guestSlots"`, `ATTENDEES_COLLECTION_NAME` = `"attendees"`, `PRODUCTS_COLLECTION_NAME` = `"products"`, `FIELD_DEFINITIONS_COLLECTION_NAME` = `"fieldDefinitions"`, `USER_PRODUCTS_COLLECTION_NAME` = `"userProducts"`, `INVENTORY_COLLECTION_NAME` = `"inventory"`, `USERS_COLLECTION_NAME` = `"users"`, `ADDRESSES_COLLECTION_NAME` = `"addresses"`, `ORDERS_COLLECTION_NAME` = `"orders"`, `PAYMENTS_COLLECTION_NAME` = `"payments"`.
+Defined in `infrastructure/config.py`. Top-level: `events`, `tags`, `taggings`, `products`, `fieldDefinitions`, `userProducts`, `inventory`, `users`, `addresses`, `orders`, `payments`, `invitations`, `checkoutIntents`. Subcollections: under `events/{eventId}` → `stands`, `schedules`, `invitations`, `attendees`; under `invitations/{invitationId}` → `guestSlots` (guest slots for multi-guest invites). Names: `EVENTS_COLLECTION_NAME` = `"events"`, `TAGS_COLLECTION_NAME` = `"tags"`, `TAGGINGS_COLLECTION_NAME` = `"taggings"`, `STANDS_COLLECTION_NAME` = `"stands"`, `SCHEDULES_COLLECTION_NAME` = `"schedules"`, `INVITATIONS_COLLECTION_NAME` = `"invitations"`, `INVITATION_GUEST_SLOTS_COLLECTION_NAME` = `"guestSlots"`, `ATTENDEES_COLLECTION_NAME` = `"attendees"`, `PRODUCTS_COLLECTION_NAME` = `"products"`, `FIELD_DEFINITIONS_COLLECTION_NAME` = `"fieldDefinitions"`, `USER_PRODUCTS_COLLECTION_NAME` = `"userProducts"`, `INVENTORY_COLLECTION_NAME` = `"inventory"`, `USERS_COLLECTION_NAME` = `"users"`, `ADDRESSES_COLLECTION_NAME` = `"addresses"`, `ORDERS_COLLECTION_NAME` = `"orders"`, `PAYMENTS_COLLECTION_NAME` = `"payments"`.
 
 **Invitations**: parent document includes **`guest_slot_count`** (declared guest capacity). **POST `/invitations`** accepts **`guest_slot_count`** (integer, ≤ ticket **`max_per_user`** when **`ticket_id`** is set) and optional **`guests`**: per-row details; **`len(guests)`** must be ≤ **`guest_slot_count`**. Only rows with a non-empty **`first_name`** or non-empty **`required_field_ids`** are written as **guest slot** subdocuments; unfilled rows are not stored. Each `required_field_id` must either be an active additional-info field on the ticket or an **active, non-deleted** row in **`fieldDefinitions`** when **`ticket_id`** is set; without **`ticket_id`**, **`guest_slot_count`** must be 0. When there is at least one slot document, create runs in one Firestore transaction with the parent. **GET `/invitations/{id}`** includes **`guest_slots`**; **GET `/invitations`** list includes **`guest_slot_count`** and **`guest_slots`** (empty list when count is 0; populated when count &gt; 0). **Invitation access token**: On create (and **POST `/invitations/{id}/access-token`**), API returns a one-time **`access_token`** (~43 URL-safe chars); Firestore stores **`access_token_hash`** only (SHA-256 with `INVITATION_TOKEN_PEPPER`). Guest URL: `/events/{eventId}/invitation/{invitationId}?token=…`. Legacy **`Event.guest_list_token`** is unused.
 

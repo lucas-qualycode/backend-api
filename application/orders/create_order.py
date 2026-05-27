@@ -3,12 +3,10 @@ import uuid
 from application.orders.schemas import CreateOrderInput
 from domain.orders.entity import Order, OrderItem
 from domain.orders.repository import OrderRepository
-from domain.products.repository import ProductRepository
 
 
 def create_order(
     order_repo: OrderRepository,
-    product_repo: ProductRepository,
     data: CreateOrderInput,
     now: str,
 ) -> Order:
@@ -45,7 +43,7 @@ def create_order(
         total_amount=total_amount,
         currency=data.currency,
         status="CREATED",
-        payment_provider="mercadopago",
+        payment_provider=data.payment_provider or "mercadopago",
         created_at=now,
         updated_at=now,
         expires_at=expires_at,

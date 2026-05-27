@@ -1,10 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.auth import CurrentUser, get_current_user
-from api.deps import (
-    get_order_repository,
-    get_product_repository,
-)
+from api.deps import get_order_repository
 from application.orders import create_order, get_order, list_orders, update_order_status
 from application.orders.schemas import CreateOrderInput, CreateOrderRequest, UpdateOrderStatusInput
 from domain.orders.entity import OrderQueryParams
@@ -46,12 +43,10 @@ def create_order_endpoint(
     data: CreateOrderRequest,
     current_user: CurrentUser = Depends(get_current_user),
     order_repo=Depends(get_order_repository),
-    product_repo=Depends(get_product_repository),
 ):
     data_with_user = CreateOrderInput(**data.model_dump(), user_id=current_user.uid)
     return create_order(
         order_repo,
-        product_repo,
         data_with_user,
         get_timestamp(),
     ).model_dump(mode="json")

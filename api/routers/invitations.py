@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from pydantic import BaseModel
 
 from api.auth import CurrentUser, get_current_user
@@ -10,16 +10,20 @@ from api.invitation_access import (
     require_invitation_token_access,
 )
 from api.deps import (
+    get_checkout_intent_repository,
     get_db,
     get_event_repository,
     get_field_definition_repository,
     get_inventory_repository,
     get_invitation_guest_slot_repository,
     get_invitation_repository,
+    get_order_repository,
+    get_payment_repository,
     get_product_repository,
     get_tag_repository,
     get_tagging_repository,
 )
+from application.invitations.checkout import process_invitation_checkout
 from application.invitations import (
     create_invitation,
     delete_invitation,
@@ -34,7 +38,10 @@ from application.invitations.schemas import (
     SubmitGuestInvitationInput,
     UpdateInvitationInput,
 )
+from application.orders.schemas import InvitationCheckoutRequest
 from application.products import list_products_as_dicts
+from domain.products.exceptions import ProductNotFoundError
+from infrastructure.mercadopago.client import MercadoPagoApiError
 from application.taggings import embed_tags_on_invitation, validate_tag_ids_for_entity
 from domain.invitations.entity import InvitationQueryParams, InvitationStatus
 from domain.invitations.exceptions import InvitationNotFoundError
@@ -123,6 +130,40 @@ def list_invitation_products_endpoint(
     return list_products_as_dicts(
         product_repo, tagging_repo, tag_repo, inventory_repo, params
     )
+
+
+@router.post("/{id}/checkout")
+def invitation_checkout_endpoint(
+    id: str,
+    data: InvitationCheckoutRequest,
+    invitation=Depends(require_invitation_read_access),
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+    order_repo=Depends(get_order_repository),
+    payment_repo=Depends(get_payment_repository),
+    product_repo=Depends(get_product_repository),
+    checkout_intent_repo=Depends(get_checkout_intent_repository),
+):
+    key = (idempotency_key or "").strip()
+    if not key:
+        raise HTTPException(status_code=400, detail="Idempotency-Key header is required")
+    try:
+        result = process_invitation_checkout(
+            invitation,
+            data,
+            idempotency_key=key,
+            order_repo=order_repo,
+            payment_repo=payment_repo,
+            product_repo=product_repo,
+            checkout_intent_repo=checkout_intent_repo,
+            now=get_timestamp(),
+        )
+        return result.model_dump(mode="json")
+    except ProductNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message) from e
+    except MercadoPagoApiError as e:
+        raise HTTPException(status_code=502, detail=str(e)) from e
 
 
 @router.post("/{id}/guest-submit")
