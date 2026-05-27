@@ -1,8 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.auth import CurrentUser, RequireOrganizer
-from api.invitation_access import require_field_definitions_guest_access
 from api.deps import get_field_definition_repository
+from api.field_definitions_public import (
+    assert_public_readable,
+    rate_limit_field_definitions_read,
+    resolve_list_query_params,
+    serialize_field_definition,
+)
+from api.invitation_access import get_optional_firebase_user
 from application.field_definitions import (
     create_field_definition,
     get_field_definition,
@@ -13,7 +19,6 @@ from application.field_definitions.schemas import (
     CreateFieldDefinitionInput,
     UpdateFieldDefinitionInput,
 )
-from domain.field_definitions.entity import FieldDefinitionQueryParams
 from domain.field_definitions.exceptions import FieldDefinitionNotFoundError
 from infrastructure.persistence.firestore_common import get_timestamp
 from utils.errors import ValidationError
@@ -28,10 +33,12 @@ def list_field_definitions_endpoint(
     field_type: str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    _access: None = Depends(require_field_definitions_guest_access),
+    user: CurrentUser | None = Depends(get_optional_firebase_user),
+    _rate_limit: None = Depends(rate_limit_field_definitions_read),
     repo=Depends(get_field_definition_repository),
 ):
-    params = FieldDefinitionQueryParams(
+    params, public_response = resolve_list_query_params(
+        user,
         active=active,
         deleted=deleted,
         field_type=field_type,
@@ -39,15 +46,26 @@ def list_field_definitions_endpoint(
         offset=offset,
     )
     items = list_field_definitions(repo, params)
-    return [x.model_dump(mode="json") for x in items]
+    return [serialize_field_definition(x, public=public_response) for x in items]
 
 
 @router.get("/{id}")
-def get_field_definition_endpoint(id: str, repo=Depends(get_field_definition_repository)):
+def get_field_definition_endpoint(
+    id: str,
+    user: CurrentUser | None = Depends(get_optional_firebase_user),
+    _rate_limit: None = Depends(rate_limit_field_definitions_read),
+    repo=Depends(get_field_definition_repository),
+):
     try:
-        return get_field_definition(repo, id).model_dump(mode="json")
+        row = get_field_definition(repo, id)
     except FieldDefinitionNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e)) from None
+
+    public_response = user is None
+    if public_response:
+        assert_public_readable(row)
+
+    return serialize_field_definition(row, public=public_response)
 
 
 @router.post("", status_code=201)

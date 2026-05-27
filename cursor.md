@@ -150,6 +150,7 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | **Invitations** (`prefix=/invitations`) | | |
 | GET | `/invitations` | user (query: event_id, status, tag_id, limit, offset) |
 | GET | `/invitations/{id}` | organizer (Firebase) **or** guest (`token` query / `X-Invitation-Token`) |
+| GET | `/invitations/{id}/products` | organizer (Firebase) **or** guest (`token` query / `X-Invitation-Token`); scopes to invitation’s `event_id`; same filters as `GET /products` |
 | POST | `/invitations/{id}/guest-submit` | guest (**requires** invite token; no Firebase) |
 | POST | `/invitations/{id}/access-token` | organizer (regenerate magic-link token; returns one-time `access_token`) |
 | POST | `/invitations` | organizer (response includes one-time `access_token`; stores `access_token_hash` only) |
@@ -157,12 +158,12 @@ Routers are mounted at root in `app.py`. Auth: **none** = no dependency; **user*
 | DELETE | `/invitations/{id}` | organizer |
 | POST | `/invitations/{id}/status` | organizer |
 | **Field definitions** (`prefix=/field-definitions`) | | |
-| GET | `/field-definitions` | organizer (Firebase) **or** guest (`invitation_id` + `token` query / header) |
-| GET | `/field-definitions/{id}` | none |
+| GET | `/field-definitions` | **public** (active, non-deleted only; no extra filters; omits audit fields) **or** authenticated (full filters + full payload); rate-limited |
+| GET | `/field-definitions/{id}` | **public** (active, non-deleted only; omits audit fields) **or** authenticated (any row + full payload); rate-limited |
 | POST | `/field-definitions` | organizer |
 | PUT/PATCH | `/field-definitions/{id}` | organizer |
 | **Products** (`prefix=/products`) | | |
-| GET | `/products` | public when no `parent_id`; with `parent_id`: event owner (Firebase) **or** guest (`invitation_id` + token scoped to that event) |
+| GET | `/products` | public when no `parent_id`; with `parent_id`: **event owner only** (Firebase) |
 | GET | `/products/{id}` | none |
 | POST | `/products` | organizer |
 | PUT/PATCH | `/products/{id}` | organizer |

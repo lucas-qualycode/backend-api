@@ -22,22 +22,33 @@ def hash_access_token(raw: str) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def verify_access_token(raw: str | None, invitation: Invitation) -> bool:
+def invitation_is_expired(invitation: Invitation) -> bool:
+    expires = _parse_expires_at(invitation.expires_at)
+    if expires is None:
+        return False
+    now = datetime.now(timezone.utc)
+    exp = expires if expires.tzinfo else expires.replace(tzinfo=timezone.utc)
+    return exp < now
+
+
+def access_token_hash_matches(raw: str | None, invitation: Invitation) -> bool:
     if not raw or not raw.strip():
         return False
     stored = invitation.access_token_hash
     if not stored:
         return False
-    if invitation.status == InvitationStatus.CANCELLED:
-        return False
-    expires = _parse_expires_at(invitation.expires_at)
-    if expires is not None:
-        now = datetime.now(timezone.utc)
-        exp = expires if expires.tzinfo else expires.replace(tzinfo=timezone.utc)
-        if exp < now:
-            return False
     expected = hash_access_token(raw.strip())
     return hmac.compare_digest(expected, stored)
+
+
+def verify_access_token(raw: str | None, invitation: Invitation) -> bool:
+    if not raw or not raw.strip():
+        return False
+    if invitation.status == InvitationStatus.CANCELLED:
+        return False
+    if invitation_is_expired(invitation):
+        return False
+    return access_token_hash_matches(raw, invitation)
 
 
 def _parse_expires_at(expires_at: str) -> datetime | None:

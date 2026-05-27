@@ -13,6 +13,7 @@ from api.deps import (
     get_db,
     get_event_repository,
     get_field_definition_repository,
+    get_inventory_repository,
     get_invitation_guest_slot_repository,
     get_invitation_repository,
     get_product_repository,
@@ -33,9 +34,12 @@ from application.invitations.schemas import (
     SubmitGuestInvitationInput,
     UpdateInvitationInput,
 )
+from application.products import list_products_as_dicts
 from application.taggings import embed_tags_on_invitation, validate_tag_ids_for_entity
 from domain.invitations.entity import InvitationQueryParams, InvitationStatus
 from domain.invitations.exceptions import InvitationNotFoundError
+from domain.products.entity import ProductQueryParams
+from domain.products.types import ProductType
 from domain.taggings.entity import TaggingEntityType
 from infrastructure.persistence.firestore_common import get_timestamp
 from utils.errors import ValidationError
@@ -88,6 +92,37 @@ def get_invitation_endpoint(
     slots = guest_slot_repo.list_by_invitation_id(id)
     out["guest_slots"] = [s.model_dump(mode="json") for s in slots]
     return out
+
+
+@router.get("/{id}/products")
+def list_invitation_products_endpoint(
+    id: str,
+    invitation=Depends(require_invitation_read_access),
+    name: str | None = None,
+    type: ProductType | None = None,
+    active: bool | None = None,
+    deleted: bool | None = None,
+    tag_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    product_repo=Depends(get_product_repository),
+    tagging_repo=Depends(get_tagging_repository),
+    tag_repo=Depends(get_tag_repository),
+    inventory_repo=Depends(get_inventory_repository),
+):
+    params = ProductQueryParams(
+        name=name,
+        parent_id=invitation.event_id,
+        type=type,
+        active=active,
+        deleted=deleted,
+        limit=limit,
+        offset=offset,
+        tag_id=tag_id,
+    )
+    return list_products_as_dicts(
+        product_repo, tagging_repo, tag_repo, inventory_repo, params
+    )
 
 
 @router.post("/{id}/guest-submit")
