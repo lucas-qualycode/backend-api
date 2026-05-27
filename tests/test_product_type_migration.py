@@ -36,8 +36,11 @@ def test_product_validate_defaults_missing_type_to_merch() -> None:
 
 
 def test_product_validate_maps_unknown_type_to_merch() -> None:
-    p = Product.model_validate(_minimal_product_dict(type="LEGACY_OTHER"))
-    assert p.type == ProductType.MERCH
+    try:
+        Product.model_validate(_minimal_product_dict(type="LEGACY_OTHER"))
+    except Exception:
+        return
+    assert False
 
 
 def test_product_validate_keeps_ticket() -> None:

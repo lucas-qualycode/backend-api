@@ -10,7 +10,6 @@ class OrderItem(BaseModel):
     total_price: int
     currency: str
     metadata: dict = {}
-    additional_data: list[dict] = []
 
 class Order(BaseModel):
     id: str

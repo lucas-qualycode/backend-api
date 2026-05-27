@@ -1,8 +1,6 @@
 import uuid
 
 from application.orders.schemas import CreateOrderInput
-from application.orders.validate_additional_data import validate_order_items_additional_data
-from domain.field_definitions.repository import FieldDefinitionRepository
 from domain.orders.entity import Order, OrderItem
 from domain.orders.repository import OrderRepository
 from domain.products.repository import ProductRepository
@@ -11,22 +9,14 @@ from domain.products.repository import ProductRepository
 def create_order(
     order_repo: OrderRepository,
     product_repo: ProductRepository,
-    field_repo: FieldDefinitionRepository,
     data: CreateOrderInput,
     now: str,
 ) -> Order:
-    validate_order_items_additional_data(product_repo, field_repo, data.items)
     items = []
     subtotal = 0
     for it in data.items:
         total_price = it.total_price if it.total_price is not None else it.quantity * it.unit_price
         subtotal += total_price
-        legacy_additional = it.metadata.get("additional_data") if isinstance(it.metadata, dict) else None
-        additional_data = (
-            it.additional_data
-            if it.additional_data is not None
-            else legacy_additional if isinstance(legacy_additional, list) else []
-        )
         items.append(
             OrderItem(
                 id=str(uuid.uuid4()),
@@ -37,7 +27,6 @@ def create_order(
                 total_price=total_price,
                 currency=it.currency,
                 metadata=it.metadata,
-                additional_data=additional_data,
             )
         )
     tax_amount = 0
