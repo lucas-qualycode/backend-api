@@ -81,6 +81,14 @@ def _request_to_lambda_event(req: Request) -> dict:
     secrets=[MERCADOPAGO_ACCESS_TOKEN],
 )
 def api(req: Request) -> Response:
+    import os
+
+    mp_token = (os.environ.get(MERCADOPAGO_ACCESS_TOKEN_ENV) or "").strip()
+    if not mp_token:
+        _log.warning(
+            "%s is missing at request time (if using secrets, remove it from .env before deploy; use .env.local locally)",
+            MERCADOPAGO_ACCESS_TOKEN_ENV,
+        )
     query = req.args.to_dict() if req.args else {}
     _log.info("%s %s %s", req.method, req.path, query)
     try:
