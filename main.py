@@ -25,7 +25,12 @@ _stdout_logger("application")
 from firebase_admin import get_app, initialize_app
 from firebase_functions import https_fn, options
 from firebase_functions.https_fn import Request, Response
+from firebase_functions.params import SecretParam
 from mangum import Mangum
+
+from infrastructure.config import MERCADOPAGO_ACCESS_TOKEN_ENV
+
+MERCADOPAGO_ACCESS_TOKEN = SecretParam(MERCADOPAGO_ACCESS_TOKEN_ENV)
 
 try:
     get_app()
@@ -73,6 +78,7 @@ def _request_to_lambda_event(req: Request) -> dict:
         cors_methods=["get", "post", "put", "patch", "delete", "options", "head"],
     ),
     timeout_sec=300,
+    secrets=[MERCADOPAGO_ACCESS_TOKEN],
 )
 def api(req: Request) -> Response:
     query = req.args.to_dict() if req.args else {}

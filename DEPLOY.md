@@ -33,6 +33,16 @@ firebase deploy --only functions:api,functions:on_payment_status_changed
 1. Open **Firebase Console → Build → Functions** and copy the **HTTPS URL** for `api` (region and hostname depend on Firebase; copy the value shown there).
 2. Set **`VITE_API_URL`** in the react-frontend environment to that base URL (no trailing slash required; see [`react-frontend/.env.example`](../react-frontend/.env.example)). Rebuild or redeploy the frontend so clients call the live API.
 
+## Secrets (Mercado Pago)
+
+Production uses **Secret Manager**, not a deployed `.env` file:
+
+1. Create or update the secret (once): `firebase functions:secrets:set MERCADOPAGO_ACCESS_TOKEN`
+2. `main.py` binds it on the `api` function via `SecretParam` + `secrets=[...]` so `os.environ["MERCADOPAGO_ACCESS_TOKEN"]` is set at runtime.
+3. Redeploy after changing secrets: `firebase deploy --only functions`
+
+Local emulator / uvicorn: keep `MERCADOPAGO_ACCESS_TOKEN` in `backend_api/.env` (gitignored).
+
 ## Repo shortcuts
 
 - Root Makefile: `make python-back-deploy` runs `cd backend_api && make deploy`.
