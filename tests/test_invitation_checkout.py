@@ -152,8 +152,8 @@ def _checkout_request(**overrides) -> InvitationCheckoutRequest:
             {
                 "product_id": "p1",
                 "quantity": 1,
-                "unit_price_cents": 1000,
-                "total_price_cents": 1000,
+                "unit_price": 1000,
+                "total_price": 1000,
             }
         ],
         "total_cents": 1000,
@@ -177,7 +177,7 @@ def test_validate_rejects_tampered_unit_price():
             product_id="p1",
             quantity=1,
             unit_price=500,
-            total_price_cents=500,
+            total_price=500,
         )
     ]
     with pytest.raises(ValidationError, match="Invalid unit price"):
@@ -186,7 +186,7 @@ def test_validate_rejects_tampered_unit_price():
 
 def test_validate_rejects_wrong_parent_event():
     repo = _ProductRepo({"p1": _product()})
-    items = [OrderItemInput(product_id="p1", quantity=1, unit_price_cents=1000)]
+    items = [OrderItemInput(product_id="p1", quantity=1, unit_price=1000)]
     with pytest.raises(ValidationError, match="does not belong"):
         validate_and_build_order_items(repo, items, "other-event")
 

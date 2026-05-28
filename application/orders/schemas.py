@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 from domain.products.types import ProductType
 
@@ -11,29 +11,11 @@ class OrderItemInput(BaseModel):
     product_id: str
     product_type: ProductType | None = None
     quantity: int = 1
-    unit_price: int | None = None
+    unit_price: int
     total_price: int | None = None
     currency: str = "BRL"
     metadata: dict[str, Any] = Field(default_factory=dict)
     name: str | None = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def normalize_price_fields(cls, data: Any) -> Any:
-        if not isinstance(data, dict):
-            return data
-        row = dict(data)
-        if row.get("unit_price") is None and row.get("unit_price_cents") is not None:
-            row["unit_price"] = row.pop("unit_price_cents")
-        if row.get("total_price") is None and row.get("total_price_cents") is not None:
-            row["total_price"] = row.pop("total_price_cents")
-        return row
-
-    @model_validator(mode="after")
-    def require_unit_price(self) -> "OrderItemInput":
-        if self.unit_price is None:
-            raise ValueError("unit_price or unit_price_cents is required")
-        return self
 
 
 class CreateOrderRequest(BaseModel):

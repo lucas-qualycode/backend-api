@@ -54,7 +54,7 @@ Field definitions are reusable documents in **`fieldDefinitions`** and can be at
 
 ### Orders and guest checkout
 
-- **`POST /orders`** (Firebase user): body uses `CreateOrderRequest` — line items accept `unit_price_cents` / `total_price_cents` (aliases for `unit_price` / `total_price`). Optional `total_cents` is not validated on this path (organizer/authenticated flow).
+- **`POST /orders`** (Firebase user): body uses `CreateOrderRequest` — line items use `unit_price` and optional `total_price` (integer cents). Optional `total_cents` is not validated on this path (organizer/authenticated flow).
 - **`POST /invitations/{id}/checkout`** (guest token or organizer): same line-item shape plus **`payment_provider`** and **`provider_checkout`** (Mercado Pago Orders API body). Requires **`Idempotency-Key`** header. Flow: validate products against invitation `event_id` and recompute totals → `create_order` (`user_id` = `guest:{invitation_id}`) → `create_payment` → Mercado Pago `POST /v1/orders` (credentials: `MERCADOPAGO_ACCESS_TOKEN`, optional `MERCADOPAGO_API_BASE_URL`) → persist provider id/response on payment. Idempotent replays return the same `{ order_id, payment_id, … }` via **`checkoutIntents`** collection.
 - **Env**: `MERCADOPAGO_ACCESS_TOKEN` (required for paid checkout; production: Firebase Secret Manager via `SecretParam` on `api` in `main.py`; local: `backend_api/.env.local` — not `.env`, which Firebase deploy reads). `MERCADOPAGO_API_BASE_URL` optional, default `https://api.mercadopago.com`.
 
