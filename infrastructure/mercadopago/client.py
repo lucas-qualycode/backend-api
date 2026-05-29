@@ -122,6 +122,44 @@ def create_order(provider_checkout: dict, *, idempotency_key: str | None = None)
         raise MercadoPagoApiError(f"Mercado Pago request failed: {exc.reason}") from exc
 
 
+def get_order(provider_order_id: str) -> dict:
+    order_id = (provider_order_id or "").strip()
+    if not order_id:
+        raise ValidationError("Mercado Pago order id is required")
+    url = f"{_api_base_url()}/v1/orders/{order_id}"
+    request = urllib.request.Request(
+        url,
+        method="GET",
+        headers={
+            "Authorization": f"Bearer {_access_token()}",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = response.read().decode("utf-8")
+            if not body:
+                return {}
+            parsed = json.loads(body)
+            if not isinstance(parsed, dict):
+                raise MercadoPagoApiError("Unexpected Mercado Pago response")
+            return parsed
+    except urllib.error.HTTPError as exc:
+        err_body = exc.read().decode("utf-8", errors="replace")
+        detail = _parse_mp_error_detail(err_body)
+        message = f"Mercado Pago request failed ({exc.code})"
+        if detail:
+            message = f"{message}: {detail}"
+        raise MercadoPagoApiError(
+            message,
+            status_code=exc.code,
+            body=err_body,
+        ) from exc
+    except urllib.error.URLError as exc:
+        logger.error("Mercado Pago GET %s failed: %s", url, exc.reason)
+        raise MercadoPagoApiError(f"Mercado Pago request failed: {exc.reason}") from exc
+
+
 def extract_provider_order_id(response: dict) -> str | None:
     order_id = response.get("id")
     if isinstance(order_id, str) and order_id.strip():

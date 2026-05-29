@@ -23,7 +23,8 @@ from api.deps import (
     get_tag_repository,
     get_tagging_repository,
 )
-from application.invitations.checkout import process_invitation_checkout
+from application.invitations.confirmation import get_invitation_confirmation
+from application.invitations.guest_payment import get_active_checkout, get_guest_payment_status
 from application.invitations import (
     create_invitation,
     delete_invitation,
@@ -41,10 +42,12 @@ from application.invitations.schemas import (
 from application.orders.schemas import InvitationCheckoutRequest
 from application.products import list_products_as_dicts
 from domain.products.exceptions import ProductNotFoundError
+from application.invitations.checkout import process_invitation_checkout
 from infrastructure.mercadopago.client import MercadoPagoApiError
 from application.taggings import embed_tags_on_invitation, validate_tag_ids_for_entity
 from domain.invitations.entity import InvitationQueryParams, InvitationStatus
 from domain.invitations.exceptions import InvitationNotFoundError
+from domain.payments.exceptions import PaymentNotFoundError
 from domain.products.entity import ProductQueryParams
 from domain.products.types import ProductType
 from domain.taggings.entity import TaggingEntityType
@@ -130,6 +133,60 @@ def list_invitation_products_endpoint(
     return list_products_as_dicts(
         product_repo, tagging_repo, tag_repo, inventory_repo, params
     )
+
+
+@router.get("/{id}/checkout/active")
+def get_active_checkout_endpoint(
+    id: str,
+    invitation=Depends(require_invitation_read_access),
+    order_repo=Depends(get_order_repository),
+    payment_repo=Depends(get_payment_repository),
+):
+    try:
+        return get_active_checkout(
+            invitation.id,
+            order_repo=order_repo,
+            payment_repo=payment_repo,
+        ).model_dump(mode="json")
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message) from e
+
+
+@router.get("/{id}/payments/{payment_id}")
+def get_guest_payment_status_endpoint(
+    id: str,
+    payment_id: str,
+    invitation=Depends(require_invitation_read_access),
+    order_repo=Depends(get_order_repository),
+    payment_repo=Depends(get_payment_repository),
+):
+    try:
+        return get_guest_payment_status(
+            invitation.id,
+            payment_id,
+            order_repo=order_repo,
+            payment_repo=payment_repo,
+        ).model_dump(mode="json")
+    except PaymentNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=e.message) from e
+
+
+@router.get("/{id}/confirmation")
+def get_invitation_confirmation_endpoint(
+    id: str,
+    invitation=Depends(require_invitation_read_access),
+    order_repo=Depends(get_order_repository),
+    payment_repo=Depends(get_payment_repository),
+    guest_slot_repo=Depends(get_invitation_guest_slot_repository),
+):
+    return get_invitation_confirmation(
+        invitation,
+        order_repo=order_repo,
+        payment_repo=payment_repo,
+        guest_slot_repo=guest_slot_repo,
+    ).model_dump(mode="json")
 
 
 @router.post("/{id}/checkout")

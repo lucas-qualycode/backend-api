@@ -32,12 +32,14 @@ class Order(BaseModel):
 class OrderQueryParams(BaseModel):
     user_id: str | None = None
     parent_id: str | None = None
+    invitation_id: str | None = None
     status: str | None = None
     limit: int | None = None
     offset: int | None = None
     FILTER_SPEC: ClassVar[list[tuple[str, str, str]]] = [
         ("user_id", "user_id", "=="),
         ("parent_id", "parent_id", "=="),
+        ("invitation_id", "invitation_id", "=="),
         ("status", "status", "=="),
     ]
 

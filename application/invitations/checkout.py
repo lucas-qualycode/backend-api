@@ -9,6 +9,11 @@ from application.orders.create_order import create_order
 from application.orders.schemas import CreateOrderInput, InvitationCheckoutRequest, OrderItemInput
 from application.payments.create_payment import create_payment
 from application.payments.schemas import CreatePaymentInput
+from application.invitations.payment_outcome import (
+    apply_mapped_status_to_payment,
+    build_checkout_response,
+    map_stored_provider_response,
+)
 from domain.invitations.entity import Invitation
 from domain.orders.repository import OrderRepository
 from domain.payments.entity import PaymentStatus
@@ -17,6 +22,10 @@ from domain.products.exceptions import ProductNotFoundError
 from domain.products.repository import ProductRepository
 from infrastructure.mercadopago import client as mp_client
 from infrastructure.mercadopago.client import MercadoPagoApiError
+from infrastructure.mercadopago.order_response import (
+    build_payment_outcome_from_stored,
+    map_provider_order_response,
+)
 from infrastructure.persistence.firestore_checkout_intents import FirestoreCheckoutIntentRepository
 from utils.errors import ValidationError
 
@@ -128,6 +137,7 @@ def process_invitation_checkout(
             now,
         )
 
+        payment_method = extract_payment_method(data.provider_checkout)
         payment_metadata: dict[str, Any] = {"idempotency_key": idempotency_key}
         if payer_email:
             payment_metadata["payer_email"] = payer_email
@@ -141,7 +151,7 @@ def process_invitation_checkout(
                 currency=order.currency,
                 status=PaymentStatus.PENDING,
                 payment_provider=data.payment_provider,
-                payment_method=extract_payment_method(data.provider_checkout),
+                payment_method=payment_method,
                 metadata=payment_metadata,
             ),
             now,
@@ -149,6 +159,7 @@ def process_invitation_checkout(
 
         provider_order_id: str | None = None
         provider_response: dict[str, Any] = {}
+        mapped = map_stored_provider_response(None)
 
         if order.total_amount > 0:
             provider_body = dict(data.provider_checkout)
@@ -162,6 +173,21 @@ def process_invitation_checkout(
                     idempotency_key=idempotency_key,
                 )
                 provider_order_id = mp_client.extract_provider_order_id(provider_response)
+                mapped = map_provider_order_response(provider_response)
+                if (
+                    mapped.pix is None
+                    and provider_order_id
+                    and (payment_method == "pix" or mapped.payment_method == "pix")
+                ):
+                    try:
+                        provider_response = mp_client.get_order(provider_order_id)
+                        mapped = build_payment_outcome_from_stored(
+                            payment_status=mapped.payment_status,
+                            payment_method="pix",
+                            provider_response=provider_response,
+                        )
+                    except (MercadoPagoApiError, ValidationError):
+                        pass
             except (MercadoPagoApiError, ValidationError) as exc:
                 failed_payment = payment.model_copy(
                     update={
@@ -177,23 +203,40 @@ def process_invitation_checkout(
                 checkout_intent_repo.fail(inv_id, idempotency_key, error=str(exc))
                 raise
 
-            if provider_order_id:
-                payment = payment.model_copy(
-                    update={
-                        "payment_provider_payment_id": provider_order_id,
-                        "metadata": {
-                            **payment.metadata,
-                            "provider_response": provider_response,
-                        },
-                        "updated_at": now,
-                    }
-                )
-                payment_repo.update(payment.id, payment)
+            payment = apply_mapped_status_to_payment(payment, mapped, now)
+            payment = payment.model_copy(
+                update={
+                    "payment_provider_payment_id": provider_order_id,
+                    "payment_method": payment_method or mapped.payment_method,
+                    "metadata": {
+                        **payment.metadata,
+                        "provider_response": provider_response,
+                    },
+                    "updated_at": now,
+                }
+            )
+            payment_repo.update(payment.id, payment)
+        else:
+            payment = payment.model_copy(
+                update={
+                    "status": PaymentStatus.APPROVED,
+                    "updated_at": now,
+                }
+            )
+            payment_repo.update(payment.id, payment)
+            mapped = mapped.model_copy(
+                update={
+                    "payment_status": PaymentStatus.APPROVED,
+                    "next_action": "done",
+                }
+            )
 
-        api_response = InvitationCheckoutResponse(
+        api_response = build_checkout_response(
             order_id=order.id,
             payment_id=payment.id,
             payment_provider_payment_id=provider_order_id,
+            mapped=mapped,
+            total_cents=order.total_amount,
             idempotent_replay=False,
         )
         checkout_intent_repo.complete(

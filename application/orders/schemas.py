@@ -51,8 +51,81 @@ class InvitationCheckoutRequest(CreateOrderRequest):
     model_config = {"extra": "ignore"}
 
 
-class InvitationCheckoutResponse(BaseModel):
+class PixDisplayPayload(BaseModel):
+    qr_code_base64: str | None = None
+    copy_paste_code: str | None = None
+    ticket_url: str | None = None
+    expires_at: str | None = None
+
+
+class PaymentFailurePayload(BaseModel):
+    code: str | None = None
+    message: str | None = None
+
+
+PaymentNextAction = Literal["display_pix", "wait", "done", "failed"]
+
+
+class PaymentOutcomeFields(BaseModel):
+    payment_status: str = "PENDING"
+    payment_method: str | None = None
+    next_action: PaymentNextAction = "wait"
+    total_cents: int | None = None
+    pix: PixDisplayPayload | None = None
+    failure: PaymentFailurePayload | None = None
+
+
+class InvitationCheckoutResponse(PaymentOutcomeFields):
     order_id: str
     payment_id: str
     payment_provider_payment_id: str | None = None
     idempotent_replay: bool = False
+
+
+class ActiveCheckoutResponse(PaymentOutcomeFields):
+    payment_status: str | None = None
+    next_action: PaymentNextAction | None = None
+    active: bool = False
+    order_id: str | None = None
+    payment_id: str | None = None
+    has_approved_payment: bool = False
+
+
+class GuestPaymentStatusResponse(PaymentOutcomeFields):
+    order_id: str
+    payment_id: str
+    payment_provider_payment_id: str | None = None
+
+
+class ConfirmationOrderItemSummary(BaseModel):
+    product_id: str
+    name: str | None = None
+    quantity: int
+    unit_price: int
+    total_price: int
+
+
+class ConfirmationOrderSummary(BaseModel):
+    id: str
+    total_amount: int
+    currency: str
+    items: list[ConfirmationOrderItemSummary] = Field(default_factory=list)
+
+
+class ConfirmationPaymentSummary(BaseModel):
+    id: str
+    status: str
+    payment_method: str | None = None
+    amount: int
+    currency: str
+    created_at: str
+    payment_provider_payment_id: str | None = None
+    order: ConfirmationOrderSummary | None = None
+
+
+class InvitationConfirmationResponse(BaseModel):
+    invitation_id: str
+    event_id: str
+    guest_slots: list[dict[str, Any]] = Field(default_factory=list)
+    couple_message: str | None = None
+    payments: list[ConfirmationPaymentSummary] = Field(default_factory=list)
